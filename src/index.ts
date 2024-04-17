@@ -11,7 +11,7 @@ export const app = express();
 
 // Common CORS headers
 const HEADERS = {
-  "Access-Control-Allow-Origin": "http://localhost:3000",
+  "Access-Control-Allow-Origin": [process.env.ORIGIN_HEADERS],
   "Access-Control-Allow-Methods": "POST, OPTIONS",
   "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
 };
