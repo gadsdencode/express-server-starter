@@ -17,6 +17,8 @@ This is an [ExpressJS](https://expressjs.com/) server written in [TypeScript](ht
 - Connect to your Railway project `railway link`
 - Start the development server `railway run yarn dev`
 
+[![Deploy on Railway](https://railway.app/button.svg)](https://railway.app/template/APGlGO?referralCode=LQ2DMc)
+
 ## 📝 Notes
 
 The server code is located in `src/index.ts`. Returns a healthcheck '`Server is up and running`'.
