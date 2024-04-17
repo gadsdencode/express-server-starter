@@ -1,29 +1,23 @@
 import express from 'express';
-import http from 'http';
-import { CopilotBackend, OpenAIAdapter } from "@copilotkit/backend";
-import cors from 'cors';
 import { config } from 'dotenv';
 import winston from 'winston';
+import { CopilotBackend, OpenAIAdapter } from "@copilotkit/backend";
+import cors from 'cors';
 
-config(); // Loads environment variables from .env file
+config(); // Initialize environment variables
 
-export const app = express();
+const app = express();
+const PORT = process.env.expressPort || 3333;
 
-// Common CORS headers
-const HEADERS = {
-  "Access-Control-Allow-Origin": [process.env.ORIGIN_HEADERS],
-  "Access-Control-Allow-Methods": "POST, OPTIONS",
-  "Access-Control-Allow-Headers": "Content-Type, Authorization, Accept",
-};
-
-// Express app handling normal routes
+// Configure CORS
 app.use(cors({
-  origin: [process.env.ORIGIN], // Adjust according to actual frontend deployment
+  origin: process.env.ORIGIN,
   credentials: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
 }));
-app.use(express.json());
-app.use(express.urlencoded({ extended: true }));
 
+// Configure Winston for logging
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -36,6 +30,9 @@ const logger = winston.createLogger({
     new winston.transports.Console({ format: winston.format.simple() })
   ],
 });
+
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
   logger.info(`Handling ${req.method} request for ${req.url}`);
@@ -52,37 +49,19 @@ api.get('/hello', (req, res) => {
   res.status(200).send({ message: 'Hello World' });
 });
 
-app.use('/api/v1', api);
-
-// Custom server logic for CopilotBackend on port 4201
-const customServer = http.createServer((request, response) => {
+api.post('/chat', (req, res) => {
+  const copilotKit = new CopilotBackend();
+  const openAIAdapter = new OpenAIAdapter();
   try {
-    const headers = {
-      ...HEADERS,
-      ...(request.method === "POST" && { "Content-Type": "application/json" }),
-    };
-    response.writeHead(200, headers);
-    if (request.method == "POST") {
-      const copilotKit = new CopilotBackend();
-      const openaiAdapter = new OpenAIAdapter();
-      copilotKit.streamHttpServerResponse(request, response, openaiAdapter);
-    } else {
-      response.end("OpenAI server ready to receive POST requests.");
-    }
+    copilotKit.streamHttpServerResponse(req, res, openAIAdapter);
   } catch (err) {
     console.error(err);
-    response.end("Error handling request.");
+    res.status(500).send("Error processing request");
   }
 });
 
-// Dual servers listen on different ports
-const expressPort = 3333; // Port for the Express app
-const customPort = 4201; // Port for the CopilotKitBackend Server
+app.use('/api/v1', api);
 
-app.listen(expressPort, () => {
-  console.log(`Express server started on port ${expressPort}`);
-});
-
-customServer.listen(customPort, 'localhost', () => {
-  console.log(`Custom server listening at http://localhost:${customPort}`);
+app.listen(PORT, () => {
+  console.log(`Server listening on port ${PORT}`);
 });
