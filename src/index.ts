@@ -7,7 +7,7 @@ import cors from 'cors';
 config(); // Initialize environment variables
 
 const app = express();
-const PORT = process.env.expressPort || 3333;
+const PORT = process.env.PORT || 3333;
 
 // Configure CORS
 app.use(cors({
