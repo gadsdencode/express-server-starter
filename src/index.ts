@@ -18,7 +18,7 @@ const HEADERS = {
 
 // Express app handling normal routes
 app.use(cors({
-  origin: ['http://localhost:3000'], // Adjust according to actual frontend deployment
+  origin: [process.env.ORIGIN], // Adjust according to actual frontend deployment
   credentials: true,
 }));
 app.use(express.json());
