@@ -1,39 +1,33 @@
-import express /*{ Request, Response }*/ from 'express';
+import express, { Request, Response } from 'express';
 import http from 'http';
-// import { Server as WebSocketServer, WebSocket } from 'ws';
+import { Server as SocketIOServer } from 'socket.io';
+import { RateLimiterMemory } from 'rate-limiter-flexible';
 import cors from 'cors';
-// import { createClient } from '@supabase/supabase-js';
+import { createClient } from '@supabase/supabase-js';
 // import { body, validationResult } from 'express-validator';
 // import crypto from 'crypto';
 import { config } from 'dotenv';
 import winston from 'winston';
-// import fetch from 'node-fetch'; 
+// import fetch from 'node-fetch';
+
+
+import { CopilotBackend, OpenAIAdapter } from "@copilotkit/backend";
 
 config(); // Loads environment variables from .env file
 
-// Websocket interface [Uncomment to use]
-/* interface WebSocketMessage {
-  type: string;
-  messageId?: string;
-  senderId?: string;
-  reaction?: string;
-  text?: string;
-  chat_id?: string;
-  userId?: string;
-  userName?: string;
-  userAvatar?: string;
-  createdAt?: string;
-  updatedAt?: string;
-  author_id?: string;
-  content: string;
-}
-*/
+// Error types [Uncomment to use]
 /* type Error = {
   message: string;
 } */
 
 export const app = express();
 const server = http.createServer(app);
+const io = new SocketIOServer(server);
+
+const rateLimiter = new RateLimiterMemory({
+  points: 10, // Number of points
+  duration: 1, // Per second
+});
 
 // CORS setup
 const allowedOrigins = ['http://localhost:3000']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
@@ -61,16 +55,24 @@ const logger = winston.createLogger({
     winston.format.timestamp(),
     winston.format.json()
   ),
+  defaultMeta: { service: 'user-service' },
   transports: [
-    new winston.transports.File({ filename: 'error.log', level: 'error' }),
-    new winston.transports.File({ filename: 'combined.log' }),
+    new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
+    new winston.transports.File({ filename: 'logs/combined.log' }),
     new winston.transports.Console({ format: winston.format.simple() })
   ],
 });
 
-app.use((req, res, next) => {
+app.use((err, req, res, next) => {
   logger.info(`Handling ${req.method} request for ${req.url}`);
+  logger.error(`Unhandled Error: ${err.message}`);
+  res.status(500).send({ error: 'An unexpected error occurred' });
   next();
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('Unhandled Rejection:', reason, promise);
+  logger.info('Unhandled Rejection:', reason, promise);
 });
 
 // Healthcheck endpoint
@@ -79,133 +81,50 @@ app.get('/', (req, res) => {
 });
 
 // Supabase Functionality [Uncomment to use]
-/* 
+
 const supabaseUrl = process.env.SUPABASE_URL || 'YOUR-SUPABASE-URL-HERE';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'YOUR-SUPABASE-ANON-KEY-HERE';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
-*/
+
 
 // Websocket Functionality [Uncomment to use]
-/* 
-const wss = new WebSocketServer({ server, path: '/api/v1/ws' });
 
-wss.on('connection', (ws: WebSocket) => {
+io.use((socket, next) => {
+  rateLimiter.consume(socket.handshake.address)
+    .then(() => {
+      next();
+    })
+    .catch(() => {
+      socket.disconnect();
+      console.error('Rate limit exceeded');
+    });
+});
+
+io.on('connection', (socket) => {
   logger.info('WebSocket connection established');
+  console.log('A user connected');
 
-  ws.on('error', (error: Error) => {
-    logger.error('WebSocket error:', error);
+  socket.on('disconnect', () => {
+    logger.info('User disconnected');
+    console.log('User disconnected');
   });
 
-  ws.on('message', async (rawData: string) => {
-    try {
-      const message: WebSocketMessage = JSON.parse(rawData);
-      await handleWebSocketMessage(message, ws);
-    } catch (error) {
-      logger.error('Error parsing WebSocket message:', error);
-      ws.send(JSON.stringify({ error: 'Invalid message format' }));
-    }
+  socket.on('postCreated', (post, callback) => {
+    io.emit(JSON.stringify({ event: 'postCreated', post }));
+    callback('Received');
+  });
+
+  socket.on('commentCreated', (comment, callback) => {
+    io.emit(JSON.stringify({ event: 'commentCreated', comment }));
+    callback('Received');
   });
 });
 
-async function handleWebSocketMessage(message: WebSocketMessage, ws: WebSocket) {
-  if (message.type === 'reaction') {
-    await handleReaction(message, ws);
-  } else if (message.type === 'typing_started' || message.type === 'typing_stopped') {
-    await handleTypingEvent(message, ws);
-  } else {
-    await handleMessage(message, ws);
-  }
-}
+  io.on('error', (error: Error) => {
+    logger.error('WebSocketIO error:', error);
+    console.log('WebSocketIO error:', error);
+  }); 
 
-async function handleTypingEvent(message: WebSocketMessage, ws: WebSocket) {
-  const { type, senderId, chat_id } = message;
-  logger.info(`Received typing event from ${senderId} in chat ${chat_id}: ${type}`);
-
-  if (!senderId || !chat_id) {
-    ws.send(JSON.stringify({ error: 'Sender ID and Chat ID are required for typing events' }));
-    return;
-  }
-
-  let recipients = 0;
-  wss.clients.forEach(client => {
-    if (client !== ws && client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type, senderId, chat_id }));
-      recipients++;
-    }
-  });
-  logger.info(`Typing event ${type} from ${senderId} was sent to ${recipients} other clients.`);
-}
-
-async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
-  const { messageId, reaction, senderId } = message;
-
-  if (!messageId) {
-    ws.send(JSON.stringify({ error: 'Message ID is required for reactions' }));
-    return;
-  }
-
-  const { data: messageData, error: messageError } = await supabase
-    .from('messages')
-    .select('*')
-    .eq('id', messageId)
-    .single();
-
-  if (messageError || !messageData) {
-    logger.error('Failed to fetch message for reaction:', messageError?.message);
-    ws.send(JSON.stringify({ error: 'Failed to fetch message' }));
-    return;
-  }
-
-  let updatedReactions = messageData.reactions || [];
-  const reactionIndex = updatedReactions.findIndex(r => r.emoji === reaction && r.userId === senderId);
-
-  if (reactionIndex !== -1) {
-    updatedReactions[reactionIndex].count += 1;
-  } else {
-    updatedReactions.push({ emoji: reaction, userId: senderId, count: 1 });
-  }
-
-  const { error: updateError } = await supabase
-    .from('messages')
-    .update({ reactions: updatedReactions })
-    .eq('id', messageId);
-
-  if (updateError) {
-    logger.error('Failed to update reactions:', updateError.message);
-    ws.send(JSON.stringify({ error: 'Failed to update reactions' }));
-    return;
-  }
-
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'reactionUpdate', messageId: messageId, reactions: updatedReactions }));
-    }
-  });
-}
-
-async function handleMessage(message: WebSocketMessage, ws: WebSocket) {
-  const { error } = await supabase
-    .from('messages')
-    .insert([{
-      chat_id: message.chat_id,
-      author_id: message.author_id,
-      content: message.content,
-      status: 'sent',
-    }]);
-
-  if (error) {
-    logger.error('Failed to insert message:', error.message);
-    ws.send(JSON.stringify({ error: 'Failed to process message' }));
-    return;
-  }
-
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(message));
-    }
-  });
-} 
-*/
 
 const api = express.Router();
 
@@ -215,34 +134,62 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
-  /* Example API Endpoint with Request/Response
-  api.get('/search-suggestions', async (req: Request, res: Response) => {
-  const { query } = req.query;
-  
-  if (!query) {
-  return res.status(400).json({ message: 'Search query is required' });
+api.post('/posts', async (req: Request, res: Response) => {
+  const { title, content, authorId } = req.body;
+
+  if (!title || !content || !authorId) {
+    return res.status(400).json({ message: 'Title, content, and author ID are required' });
   }
-  
+
   try {
-  const { data, error } = await supabase
-  .from('profiles') // Supabase table name goes here
-  .select('name') // Supabase column name goes here
-  .ilike('name', `%${query}%`) // Supabase column name goes here
-  .limit(5);
-  
-  if (error) throw error;
-  
-  const suggestions = data.map((profile) => profile.name);
-  res.json(suggestions);
+    const { data, error } = await supabase
+      .from('posts')
+      .insert({ title, content, author_id: authorId })
+      .single();
+
+    if (error) throw error;
+
+    res.status(200).json(data);
   } catch (error) {
-  const message = (error as { message: string }).message || 'An unexpected error occurred';
-  res.status(500).json({ message });
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
   }
-  });
-  */
+});
+
+api.get('/read', async (req: Request, res: Response) => {
+  const { title, content, authorId } = req.body;
+
+  if (!title || !content || !authorId) {
+    return res.status(400).json({ message: 'Error' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .select('*, author:author_id(username)')
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+
+    res.status(200).json(data);
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
+
+api.post('/chat', (req, res) => {
+  const copilotKit = new CopilotBackend();
+  const openAIAdapter = new OpenAIAdapter();
+  try {
+    copilotKit.streamHttpServerResponse(req, res, openAIAdapter);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send("Error processing request");
+  }
+});
   
   // No API endpoints below this line
-
   // Version the api
   app.use('/api/v1', api);
   
