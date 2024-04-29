@@ -134,44 +134,95 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
-api.post('/posts', async (req: Request, res: Response) => {
-  const { title, content, authorId } = req.body;
-
-  if (!title || !content || !authorId) {
-    return res.status(400).json({ message: 'Title, content, and author ID are required' });
-  }
-
-  try {
-    const { data, error } = await supabase
-      .from('posts')
-      .insert({ title, content, author_id: authorId })
-      .single();
-
-    if (error) throw error;
-
-    res.status(200).json(data);
-  } catch (error) {
-    const message = (error as { message: string }).message || 'An unexpected error occurred';
-    res.status(500).json({ message });
-  }
-});
-
-api.get('/read', async (req: Request, res: Response) => {
-  const { title, content, authorId } = req.body;
-
-  if (!title || !content || !authorId) {
-    return res.status(400).json({ message: 'Error' });
-  }
-
+api.get('/posts', async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase
       .from('posts')
       .select('*, author:author_id(username)')
       .order('created_at', { ascending: false });
 
-    if (error) throw error;
+    if (error) {
+      logger.error('Error fetching posts:', error);
+      res.status(500).json({ error: 'Failed to fetch posts' });
+    } else {
+      res.status(200).json(data);
+    }
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
 
-    res.status(200).json(data);
+api.post('/posts', async (req: Request, res: Response) => {
+  const { title, content } = req.body;
+
+  if (!title || !content) {
+    return res.status(400).json({ message: 'Title and content are required' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('posts')
+      .insert([{ title, content }])
+      .single();
+
+    if (error) {
+      logger.error('Error creating post:', error);
+      res.status(500).json({ error: 'Failed to create post' });
+    } else {
+      io.emit('postCreated', data);
+      res.status(201).json(data);
+    }
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
+
+// Comments API route
+api.get('/posts/:id/comments', async (req: Request, res: Response) => {
+  const postId = Number(req.params.id);
+
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .select('*')
+      .eq('post_id', postId)
+      .order('created_at', { ascending: false });
+
+    if (error) {
+      logger.error('Error fetching comments:', error);
+      res.status(500).json({ error: 'Failed to fetch comments' });
+    } else {
+      res.status(200).json(data);
+    }
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
+
+api.post('/posts/:id/comments', async (req: Request, res: Response) => {
+  const postId = Number(req.params.id);
+  const { content } = req.body;
+
+  if (!content) {
+    return res.status(400).json({ message: 'Content is required' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('comments')
+      .insert([{ post_id: postId, content }])
+      .single();
+
+    if (error) {
+      logger.error('Error creating comment:', error);
+      res.status(500).json({ error: 'Failed to create comment' });
+    } else {
+      io.emit('commentCreated', data);
+      res.status(201).json(data);
+    }
   } catch (error) {
     const message = (error as { message: string }).message || 'An unexpected error occurred';
     res.status(500).json({ message });
