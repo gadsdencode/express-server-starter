@@ -22,7 +22,15 @@ config(); // Loads environment variables from .env file
 
 export const app = express();
 const server = http.createServer(app);
-const io = new SocketIOServer(server);
+
+const io = new SocketIOServer(server, {
+  cors: {
+    origin: process.env.ORIGIN || '*',
+    credentials: true
+  },
+  transports: ['websocket', 'polling'] // Explicitly specify to use WebSocket first
+});
+
 
 const rateLimiter = new RateLimiterMemory({
   points: 10, // Number of points
