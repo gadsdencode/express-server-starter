@@ -43,7 +43,9 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'), false);
     }
   },
-  credentials: true,  // Ensuring credentials are supported
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }));
 
 // Middleware setup
