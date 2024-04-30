@@ -29,23 +29,12 @@ const rateLimiter = new RateLimiterMemory({
   duration: 1, // Per second
 });
 
-// CORS setup
-const allowedOrigins = [
-  'http://localhost:3000',  // Local development
-  'https://atlas-mvp-demo.vercel.app', // Production URL
-  'https://web-dev-713d.up.railway.app' // Server itself
-];
+// Configure CORS
 app.use(cors({
-  origin: (origin, callback) => {
-    if (!origin || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'), false);
-    }
-  },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
+  origin: process.env.ORIGIN,
   credentials: true,
+  methods: ["GET", "POST", "OPTIONS"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
 }));
 
 // Middleware setup
