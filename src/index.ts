@@ -1,7 +1,6 @@
 import express, { Request, Response } from 'express';
 import http from 'http';
-import { Server as SocketIOServer } from 'socket.io';
-import { RateLimiterMemory } from 'rate-limiter-flexible';
+import { setupWebSocket } from './websocket';
 import cors from 'cors';
 import { createClient } from '@supabase/supabase-js';
 // import { body, validationResult } from 'express-validator';
@@ -20,22 +19,25 @@ config(); // Loads environment variables from .env file
   message: string;
 } */
 
+class ApiError extends Error {
+  constructor(public statusCode: number, message: string) {
+    super(message);
+  }
+}
+
+function handleError(err: Error, res: Response) {
+  if (err instanceof ApiError) {
+    res.status(err.statusCode).json({ error: err.message });
+  } else {
+    logger.error('Unhandled error:', err);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+}
+
 export const app = express();
 const server = http.createServer(app);
 
-const io = new SocketIOServer(server, {
-  cors: {
-    origin: process.env.ORIGIN || 'http://localhost:3000',
-    credentials: true
-  },
-  transports: ['websocket', 'polling'] // Explicitly specify to use WebSocket first
-});
-
-
-const rateLimiter = new RateLimiterMemory({
-  points: 10, // Number of points
-  duration: 1, // Per second
-});
+const io = setupWebSocket(server);
 
 // Configure CORS
 app.use(cors({
@@ -92,45 +94,6 @@ const supabase = createClient(supabaseUrl, supabaseAnonKey);
 app.options('*', cors());
 
 
-// Websocket Functionality [Uncomment to use]
-
-io.use((socket, next) => {
-  rateLimiter.consume(socket.handshake.address)
-    .then(() => {
-      next();
-    })
-    .catch(() => {
-      socket.disconnect();
-      console.error('Rate limit exceeded');
-    });
-});
-
-io.on('connection', (socket) => {
-  logger.info('WebSocket connection established');
-  console.log('A user connected');
-
-  socket.on('disconnect', () => {
-    logger.info('User disconnected');
-    console.log('User disconnected');
-  });
-
-  socket.on('postCreated', (post, callback) => {
-    io.emit(JSON.stringify({ event: 'postCreated', post }));
-    callback('Received');
-  });
-
-  socket.on('commentCreated', (comment, callback) => {
-    io.emit(JSON.stringify({ event: 'commentCreated', comment }));
-    callback('Received');
-  });
-});
-
-  io.on('error', (error: Error) => {
-    logger.error('WebSocketIO error:', error);
-    console.log('WebSocketIO error:', error);
-  }); 
-
-
 const api = express.Router();
 
 api.get('/hello', (req, res) => {
@@ -146,17 +109,15 @@ api.get('/posts', async (req: Request, res: Response) => {
       .select('*, author:author_id(username)')
       .order('created_at', { ascending: false });
 
-    if (error) {
-      logger.error('Error fetching posts:', error);
-      res.status(500).json({ error: 'Failed to fetch posts' });
-    } else {
+      if (error) {
+        throw new ApiError(500, 'Failed to fetch posts');
+      }
+  
       res.status(200).json(data);
+    } catch (error: any) {
+      handleError(error, res);
     }
-  } catch (error) {
-    const message = (error as { message: string }).message || 'An unexpected error occurred';
-    res.status(500).json({ message });
-  }
-});
+  });
 
 api.post('/posts', async (req: Request, res: Response) => {
   const { title, content } = req.body;
