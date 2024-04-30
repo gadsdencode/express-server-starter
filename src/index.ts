@@ -43,9 +43,7 @@ app.use(cors({
       callback(new Error('Not allowed by CORS'), false);
     }
   },
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true,
+  credentials: true,  // Ensuring credentials are supported
 }));
 
 // Middleware setup
@@ -93,6 +91,7 @@ const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'YOUR-SUPABASE-ANON-KEY
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
 app.options('*', cors());
+
 
 // Websocket Functionality [Uncomment to use]
 
@@ -145,7 +144,7 @@ api.get('/posts', async (req: Request, res: Response) => {
   try {
     const { data, error } = await supabase
       .from('posts')
-      .select('*')
+      .select('*, author:author_id(username)')
       .order('created_at', { ascending: false });
 
     if (error) {
@@ -154,12 +153,11 @@ api.get('/posts', async (req: Request, res: Response) => {
     } else {
       res.status(200).json(data);
     }
-  } catch (error: any) {
-    logger.error('Unhandled error in fetching posts:', error.message);
-    res.status(500).json({ error: 'An unexpected error occurred' });
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
   }
 });
-
 
 api.post('/posts', async (req: Request, res: Response) => {
   const { title, content } = req.body;
