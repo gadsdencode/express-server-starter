@@ -30,16 +30,20 @@ const rateLimiter = new RateLimiterMemory({
 });
 
 // CORS setup
-const allowedOrigins = ['http://localhost:3000']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
+const allowedOrigins = [
+  'http://localhost:3000',  // Local development
+  'https://atlas-mvp-demo.vercel.app', // Production URL
+  'https://web-dev-713d.up.railway.app' // Server itself
+];
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      callback(new Error('Not allowed by CORS'), false);
     }
   },
-  credentials: true,
+  credentials: true,  // Ensuring credentials are supported
 }));
 
 // Middleware setup
@@ -86,6 +90,7 @@ const supabaseUrl = process.env.SUPABASE_URL || 'YOUR-SUPABASE-URL-HERE';
 const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'YOUR-SUPABASE-ANON-KEY-HERE';
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
+app.options('*', cors());
 
 // Websocket Functionality [Uncomment to use]
 
