@@ -12,6 +12,15 @@ import { createGoogleCalendarClient } from './utils/googleCalendarClient';
 import { OAuth2Client } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
 
+const googleClientId = process.env.GOOGLE_CLIENT_ID;
+const oAuth2Client = new OAuth2Client(googleClientId);
+
+interface GoogleLoginRequest extends Request {
+  body: {
+    access_token: string;
+  };
+}
+
 config(); // Loads environment variables from .env file
 
 // Websocket interface [Uncomment to use]
@@ -218,26 +227,13 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
-const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const oAuth2Client = new OAuth2Client(googleClientId);
-
-interface GoogleLoginRequest extends Request {
-  body: {
-    access_token: string;
-  };
-}
-
 export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) {
-  if (req.method !== 'POST') {
-    return res.status(405).json({ error: 'Method not allowed' });
-  }
-
-  const { access_token } = req.body;
-  if (!access_token) {
-    return res.status(400).json({ error: 'Access token is required' });
+  if (!req.body.access_token) {
+    return res.status(400).json({ message: 'Access token is required' });
   }
 
   try {
+    const { access_token } = req.body;
     const ticket = await oAuth2Client.verifyIdToken({
       idToken: access_token,
       audience: googleClientId,
@@ -251,10 +247,10 @@ export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) 
       throw new Error('Email not found in token payload');
     }
 
-    const supabaseUrl: string = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
-    const supabaseKey: string = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
-
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
     const supabase = createClient(supabaseUrl, supabaseKey);
+
     const { data: user, error: userError } = await supabase
       .from('profiles')
       .select('*')
@@ -283,7 +279,7 @@ export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) 
     res.status(200).json({ message: 'Google login successful', user });
   } catch (error) {
     console.error('Google login failed:', error);
-    res.status(500).json({ error: 'Google login failed', details: (error as Error).message });
+    res.status(500).json({ message: 'Google login failed', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 }
 
