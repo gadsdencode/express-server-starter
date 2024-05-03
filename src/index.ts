@@ -8,7 +8,8 @@ import cors from 'cors';
 import { config } from 'dotenv';
 import winston from 'winston';
 // import fetch from 'node-fetch';
-import { google } from 'googleapis';
+import { createGoogleCalendarClient } from './utils/googleCalendarClient';
+import { handleGoogleLogin } from './api/auth/googleAuth';
 
 config(); // Loads environment variables from .env file
 
@@ -54,22 +55,6 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.raw({ type: 'application/vnd.custom-type' }));
 app.use(express.text({ type: 'text/html' }));
-
-const clientId = process.env.GOOGLE_CLIENT_ID || '';
-const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
-const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000';
-
-const oauth2Client = new google.auth.OAuth2(
-  clientId,
-  clientSecret,
-  redirectUri
-);
-
-// Google Calendar API client
-const googleCalendarClient = google.calendar({
-  version: 'v3',
-  auth: oauth2Client
-});
 
 // Winston Logger setup
 const logger = winston.createLogger({
@@ -232,8 +217,11 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
+api.post('/auth/google', handleGoogleLogin);
+
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
+    const googleCalendarClient = createGoogleCalendarClient();
     const events = await googleCalendarClient.events.list({
       calendarId: 'primary',
       timeMin: new Date().toISOString(),
