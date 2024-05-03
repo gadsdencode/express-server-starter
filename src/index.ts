@@ -266,7 +266,7 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
   // No API endpoints below this line
 
   // Version the api
-  api.post('/api/auth/googleAuth', handleGoogleLogin);
+  api.post('/googleAuth', handleGoogleLogin);
 
   app.use('/api/v1', api);
   
