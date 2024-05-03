@@ -268,7 +268,7 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
   // Version the api
   api.post('/googleAuth', handleGoogleLogin);
 
-  app.use('/api/v1', api);
+  app.use('/api/auth', api);
   
   const port = process.env.PORT || 3333;
   server.listen(port, () => {
