@@ -66,7 +66,7 @@ export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) 
       }
 
       let user;
-      user.googleAccessToken = access_token;
+
       if (existingUser) {
         // User already exists, update the user record if needed
         user = existingUser;
@@ -83,18 +83,6 @@ export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) 
 
         user = newUser;
       }
-
-      const { data: updatedUser, error: updateError } = await supabase
-          .from('users')
-          .update({ googleAccessToken: access_token })
-          .eq('id', user.id)
-          .single();
-
-        if (updateError) {
-          throw updateError;
-        }
-
-        user = updatedUser;
 
       // Generate a Supabase access token for the user
       const { data: authData, error: signInError } = await supabase.auth.signInWithOtp({
