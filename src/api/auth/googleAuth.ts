@@ -5,11 +5,12 @@ import { Request, Response } from 'express';
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
+const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000';
 
 const oAuth2Client = new OAuth2Client(
   googleClientId,
   googleClientSecret,
-  'https://web-production-68e90.up.railway.app/api/auth/googleAuth'
+  redirectUri
 );
 
 interface GoogleLoginRequest extends Request {

@@ -217,7 +217,7 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
-api.post('/auth/googleAuth', handleGoogleLogin);
+api.post('/api/auth/googleAuth', handleGoogleLogin);
 
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
