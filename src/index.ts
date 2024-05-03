@@ -10,6 +10,15 @@ import winston from 'winston';
 // import fetch from 'node-fetch';
 import { createGoogleCalendarClient } from './utils/googleCalendarClient';
 import { handleGoogleLogin } from './api/auth/googleAuth';
+import { supabase } from './utils/supabaseClient';
+
+declare global {
+  namespace Express {
+    interface Request {
+      userId?: string;  // Assuming userId is optional
+    }
+  }
+}
 
 config(); // Loads environment variables from .env file
 
@@ -217,11 +226,27 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
-api.post('/auth/googleAuth', handleGoogleLogin);
+api.post('/api/auth/googleAuth', handleGoogleLogin);
 
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
-    const googleCalendarClient = createGoogleCalendarClient();
+    // Get the authenticated user's ID from the request (e.g., from the session or JWT)
+    const userId = req.userId; // Implement your own authentication mechanism
+
+    // Retrieve the user's Google access token from the database
+    const { data: user, error: fetchError } = await supabase
+      .from('users')
+      .select('googleAccessToken')
+      .eq('id', userId)
+      .single();
+
+    if (fetchError) {
+      throw fetchError;
+    }
+
+    const accessToken = user.googleAccessToken;
+
+    const googleCalendarClient = createGoogleCalendarClient(accessToken);
     const events = await googleCalendarClient.events.list({
       calendarId: 'primary',
       timeMin: new Date().toISOString(),

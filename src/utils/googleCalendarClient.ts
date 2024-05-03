@@ -10,9 +10,10 @@ const oauth2Client = new google.auth.OAuth2(
   redirectUri
 );
 
-export const createGoogleCalendarClient = () => {
-  return google.calendar({
-    version: 'v3',
-    auth: oauth2Client,
-  });
-};
+export const createGoogleCalendarClient = (accessToken: string) => {
+    oauth2Client.setCredentials({ access_token: accessToken });
+    return google.calendar({
+      version: 'v3',
+      auth: oauth2Client,
+    });
+  };
