@@ -1,4 +1,4 @@
-import express /*{ Request, Response }*/ from 'express';
+import express, { Request, Response } from 'express';
 import http from 'http';
 // import { Server as WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
@@ -7,7 +7,8 @@ import cors from 'cors';
 // import crypto from 'crypto';
 import { config } from 'dotenv';
 import winston from 'winston';
-// import fetch from 'node-fetch'; 
+// import fetch from 'node-fetch';
+import { google } from 'googleapis';
 
 config(); // Loads environment variables from .env file
 
@@ -53,6 +54,22 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.raw({ type: 'application/vnd.custom-type' }));
 app.use(express.text({ type: 'text/html' }));
+
+const clientId = process.env.GOOGLE_CLIENT_ID || '';
+const clientSecret = process.env.GOOGLE_CLIENT_SECRET || '';
+const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000';
+
+const oauth2Client = new google.auth.OAuth2(
+  clientId,
+  clientSecret,
+  redirectUri
+);
+
+// Google Calendar API client
+const googleCalendarClient = google.calendar({
+  version: 'v3',
+  auth: oauth2Client
+});
 
 // Winston Logger setup
 const logger = winston.createLogger({
@@ -214,6 +231,24 @@ api.get('/hello', (req, res) => {
 });
 
 // Add API endpoints here
+
+api.get('/calendarevents', async (req: Request, res: Response) => {
+  try {
+    const events = await googleCalendarClient.events.list({
+      calendarId: 'primary',
+      timeMin: new Date().toISOString(),
+      maxResults: 10,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    res.json(events.data.items);
+  } catch (error) {
+    console.error('Error retrieving events:', error);
+    const message = (error as { message: string }).message || 'Failed to fetch events';
+    res.status(500).json({ message });
+  }
+});
 
   /* Example API Endpoint with Request/Response
   api.get('/search-suggestions', async (req: Request, res: Response) => {
