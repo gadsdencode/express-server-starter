@@ -1,17 +1,10 @@
-import { createClient } from '../../utils/supabase/server';
-import { Session, User } from '@supabase/supabase-js';
-import { OAuth2Client } from 'google-auth-library';
 import { Request, Response } from 'express';
+import { OAuth2Client } from 'google-auth-library';
+import { createClient } from '@supabase/supabase-js';
 
+// Assuming environment variables are set for Google OAuth2
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
-const googleClientSecret = process.env.GOOGLE_CLIENT_SECRET;
-const redirectUri = process.env.GOOGLE_REDIRECT_URI || 'http://localhost:3000';
-
-const oAuth2Client = new OAuth2Client(
-  googleClientId,
-  googleClientSecret,
-  redirectUri
-);
+const oAuth2Client = new OAuth2Client(googleClientId);
 
 interface GoogleLoginRequest extends Request {
   body: {
@@ -19,94 +12,62 @@ interface GoogleLoginRequest extends Request {
   };
 }
 
-interface AuthOtpResponse {
-  data: {
-    user: User | null;
-    session: Session | null;
-    messageId?: string | null | undefined;
-    access_token: string;
-  };
-  error: Error | null;
-}
-
-/**
- * Extracts an access token from a Supabase session object.
- * @param session The session object containing the access token.
- * @returns The access token if available, or undefined.
- */
-function fetchAccessTokenFromSession(session: Session | null): string | undefined {
-  return session?.access_token;
-}
-
 export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) {
-  if (req.method === 'POST') {
-    const { access_token } = req.body;
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method not allowed' });
+  }
 
-    try {
-      // Verify the access token
-      const ticket = await oAuth2Client.verifyIdToken({
-        idToken: access_token,
-        audience: googleClientId,
-      });
+  const { access_token } = req.body;
+  if (!access_token) {
+    return res.status(400).json({ error: 'Access token is required' });
+  }
 
-      const payload = ticket.getPayload();
-      const userId = payload ? payload['sub'] : undefined;
-      const email = payload ? payload['email'] : undefined;
+  try {
+    const ticket = await oAuth2Client.verifyIdToken({
+      idToken: access_token,
+      audience: googleClientId,
+    });
 
-      const supabase = createClient();
+    const payload = ticket.getPayload();
+    const userId = payload?.sub;
+    const email = payload?.email;
 
-      // Check if the user already exists
-      const { data: existingUser, error: fetchError } = await supabase
-        .from('users')
-        .select('*')
-        .eq('email', email)
+    if (!email) {
+      throw new Error('Email not found in token payload');
+    }
+
+    const supabaseUrl: string = process.env.NEXT_PUBLIC_SUPABASE_URL || ''
+    const supabaseKey: string = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || ''
+
+    const supabase = createClient(supabaseUrl, supabaseKey);
+    const { data: user, error: userError } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('email', email)
+      .single();
+
+    if (userError && userError.message !== 'No rows found') {
+      throw userError;
+    }
+
+    if (!user) {
+      // User does not exist, create a new user record
+      const { data: newUser, error: newUserError } = await supabase
+        .from('profiles')
+        .insert([{ email, google_id: userId }])
         .single();
 
-      if (fetchError) {
-        throw fetchError;
+      if (newUserError) {
+        throw newUserError;
       }
 
-      let user;
-
-      if (existingUser) {
-        // User already exists, update the user record if needed
-        user = existingUser;
-      } else {
-        // Create a new user
-        const { data: newUser, error: insertError } = await supabase
-          .from('users')
-          .insert({ email, google_id: userId })
-          .single();
-
-        if (insertError) {
-          throw insertError;
-        }
-
-        user = newUser;
-      }
-
-      // Generate a Supabase access token for the user
-      const { data: authData, error: signInError } = await supabase.auth.signInWithOtp({
-        email: user.email,
-      }) as AuthOtpResponse;
-
-      if (signInError) {
-        throw signInError;
-      }
-
-      const supabaseAccessToken = fetchAccessTokenFromSession(authData.session);
-
-      if (!supabaseAccessToken) {
-        throw new Error('Failed to retrieve access token');
-      }
-
-      // Return the Supabase access token to the client
-      res.status(200).json({ access_token: supabaseAccessToken });
-    } catch (error) {
-      console.error('Google login failed:', error);
-      res.status(500).json({ error: 'Google login failed' });
+      return res.status(201).json({ message: 'User created successfully', user: newUser });
     }
-  } else {
-    res.status(405).json({ error: 'Method not allowed' });
+
+    // Existing user, return successful login response
+    res.status(200).json({ message: 'Google login successful', user });
+  } catch (error) {
+    console.error('Google login failed:', error);
+    res.status(500).json({ error: 'Google login failed', details: (error as Error).message });
   }
 }

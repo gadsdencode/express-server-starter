@@ -217,8 +217,6 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
-api.post('/api/auth/googleAuth', handleGoogleLogin);
-
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
     const accessToken = req.headers.authorization?.split(' ')[1];
@@ -268,6 +266,8 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
   // No API endpoints below this line
 
   // Version the api
+  api.post('/api/auth/googleAuth', handleGoogleLogin);
+
   app.use('/api/v1', api);
   
   const port = process.env.PORT || 3333;
