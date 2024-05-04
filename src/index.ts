@@ -334,6 +334,7 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
       }
   
       if (!user.access_token) {
+        logger.error('Access token not available for user:', email);
         return res.status(401).json({ message: 'Access token not available' });
       }
   
