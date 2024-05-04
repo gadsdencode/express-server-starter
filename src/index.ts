@@ -90,13 +90,6 @@ app.get('/', (req, res) => {
   res.status(200).send({ status: 'ok' });
 });
 
-// Supabase Functionality [Uncomment to use]
-/* 
-const supabaseUrl = process.env.SUPABASE_URL || 'YOUR-SUPABASE-URL-HERE';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || 'YOUR-SUPABASE-ANON-KEY-HERE';
-const supabase = createClient(supabaseUrl, supabaseAnonKey);
-*/
-
 // Websocket Functionality [Uncomment to use]
 /* 
 const wss = new WebSocketServer({ server, path: '/api/v1/ws' });
@@ -333,6 +326,10 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
 
   // Version the api
   api.post('/googleAuth', handleGoogleLogin);
+
+  api.get('/googleAuth', (req, res) => {
+    res.status(200).send("GoogleAuth GET endpoint is reachable");
+  });  
 
   app.use('/api/v1', api);
   
