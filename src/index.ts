@@ -233,16 +233,13 @@ export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) 
     });
 
     const payload = ticket.getPayload();
+    if (!payload) throw new Error('No payload available in the ID token');
+
     const userId = payload?.sub;
     const email = payload?.email;
+    if (!email) throw new Error('Email not found in token payload');
 
-    if (!email) {
-      throw new Error('Email not found in token payload');
-    }
-
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || '';
-    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || '';
-    const supabase = createClient(supabaseUrl, supabaseKey);
+    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
 
     const { data: user, error: userError } = await supabase
       .from('profiles')
@@ -250,31 +247,26 @@ export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) 
       .eq('email', email)
       .single();
 
-    if (userError && userError.message !== 'No rows found') {
-      throw userError;
-    }
+    if (userError) throw new Error(userError.message);
 
     if (!user) {
-      // User does not exist, create a new user record
       const { data: newUser, error: newUserError } = await supabase
         .from('profiles')
         .insert([{ email, google_id: userId }])
         .single();
 
-      if (newUserError) {
-        throw newUserError;
-      }
+      if (newUserError) throw new Error(newUserError.message);
 
       return res.status(201).json({ message: 'User created successfully', user: newUser });
     }
 
-    // Existing user, return successful login response
     res.status(200).json({ message: 'Google login successful', user });
   } catch (error) {
-    console.error('Google login failed:', error);
+    logger.error('Google login failed:', error);
     res.status(500).json({ message: 'Google login failed', details: error instanceof Error ? error.message : 'Unknown error' });
   }
 }
+
 
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
