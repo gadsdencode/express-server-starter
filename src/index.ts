@@ -285,22 +285,6 @@ export async function handleGoogleLogin(req: Request, res: Response) {
   }
 }
 
-async function refreshAccessToken(refreshToken: string): Promise<string> {
-  const oAuth2Client = new OAuth2Client(googleClientId);
-  oAuth2Client.setCredentials({ refresh_token: refreshToken });
-
-  const { credentials } = await oAuth2Client.refreshAccessToken();
-  const { access_token: accessToken, expiry_date: expiryDate } = credentials;
-
-  // Update the access token and expiry date in the database
-  await supabase
-    .from('google_auth')
-    .update({ access_token: accessToken, expiry_date: expiryDate })
-    .eq('refresh_token', refreshToken);
-
-  return accessToken;
-}
-
 
 export function createGoogleCalendarClient(accessToken: string): any {
   const oAuth2Client = new OAuth2Client(googleClientId);
@@ -319,54 +303,33 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
       return res.status(400).json({ message: 'Email is required' });
     }
 
-    const { data: user, error: userError } = await supabase
-      .from('google_auth')
-      .select('access_token, refresh_token, expiry_date')
-      .eq('email', email)
-      .single();
-
-      if (userError) {
-        if (userError.code === 'PGRST116') {
-          logger.error(`Database query error: ${userError.message}`);
-          return res.status(404).json({ message: 'User not found' });
-        }
-        throw new Error(userError.message);
-      }
-  
-      if (!user.access_token) {
-        logger.error('Access token not available for user:', email);
-        return res.status(401).json({ message: 'Access token not available' });
-      }
-  
-      let accessToken = user.access_token;
-  
-      // Check if the access token has expired
-      const currentTime = new Date().getTime();
-      if (user.expiry_date && user.expiry_date < currentTime) {
-        try {
-          // Access token has expired, refresh it
-          accessToken = await refreshAccessToken(user.refresh_token);
-        } catch (error) {
-          logger.error(`Failed to fetch events: ${error}`);
-          return res.status(401).json({ message: 'Failed to refresh access token' });
-        }
-      }
-  
-      const googleCalendarClient = createGoogleCalendarClient(accessToken);
-      const events = await googleCalendarClient.events.list({
-        calendarId: 'primary',
-        timeMin: new Date().toISOString(),
-        maxResults: 10,
-        singleEvents: true,
-        orderBy: 'startTime',
-      });
-  
-      res.json(events.data.items);
-    } catch (error) {
-      console.error('Error retrieving events:', error);
-      res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
+    const authorizationHeader = req.headers.authorization;
+    if (!authorizationHeader) {
+      logger.error('Authorization header is missing');
+      return res.status(401).json({ message: 'Access token is missing' });
     }
-  });
+
+    const accessToken = authorizationHeader.split(' ')[1];
+    if (!accessToken) {
+      logger.error('Access token is missing in the Authorization header');
+      return res.status(401).json({ message: 'Access token is missing' });
+    }
+
+    const googleCalendarClient = createGoogleCalendarClient(accessToken);
+    const events = await googleCalendarClient.events.list({
+      calendarId: 'primary',
+      timeMin: new Date().toISOString(),
+      maxResults: 10,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    res.json(events.data.items);
+  } catch (error) {
+    logger.error(`Error retrieving events: ${error}`);
+    res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
+  }
+});
 
   /* Example API Endpoint with Request/Response
   api.get('/search-suggestions', async (req: Request, res: Response) => {
