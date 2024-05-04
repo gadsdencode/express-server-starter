@@ -262,7 +262,7 @@ export async function handleGoogleLogin(req: Request, res: Response) {
       }
   
       if (users.length > 0) {
-        return res.status(200).json({ message: 'User already exists', user: users[0] });
+        return res.status(200).json({ message: 'User already exists', user: users[0], access_token });
       }
 
       const { tokens } = await oAuth2Client.getToken(access_token);
@@ -278,7 +278,7 @@ export async function handleGoogleLogin(req: Request, res: Response) {
       throw new Error(upsertError.message);
     }
 
-    return res.status(200).json({ message: 'User upserted successfully', user: upsertedUser });
+    return res.status(200).json({ message: 'User upserted successfully', user: upsertedUser, access_token });
   } catch (error) {
     console.error('Error during Google login:', error);
     return res.status(500).json({ message: 'Google login failed', details: (error as Error).message });
