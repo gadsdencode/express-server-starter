@@ -17,11 +17,6 @@ const oAuth2Client = new OAuth2Client(googleClientId);
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-if (!supabaseUrl || !supabaseKey) {
-  console.error('Supabase URL and Key must be set in environment variables.');
-  process.exit(1);
-}
-
 const supabase = createClient(supabaseUrl, supabaseKey);
 
 config(); // Loads environment variables from .env file
@@ -74,14 +69,26 @@ const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
     winston.format.timestamp(),
-    winston.format.json()
+    winston.format.json(),
+    winston.format.printf(info => `${info.timestamp} [${info.level}]: ${info.message}`)
   ),
   transports: [
     new winston.transports.File({ filename: 'error.log', level: 'error' }),
     new winston.transports.File({ filename: 'combined.log' }),
     new winston.transports.Console({ format: winston.format.simple() })
   ],
+  exceptionHandlers: [
+    new winston.transports.File({ filename: 'exceptions.log' })
+  ],
+  rejectionHandlers: [
+    new winston.transports.File({ filename: 'rejections.log' })
+  ]
 });
+
+if (!supabaseUrl || !supabaseKey) {
+  logger.error('Supabase URL and Key must be set in environment variables.');
+  process.exit(1);
+}
 
 app.use((req, res, next) => {
   logger.info(`Handling ${req.method} request for ${req.url}`);
@@ -90,6 +97,7 @@ app.use((req, res, next) => {
 
 // Healthcheck endpoint
 app.get('/', (req, res) => {
+  logger.info('Healthcheck endpoint was hit');
   res.status(200).send({ status: 'ok' });
 });
 
@@ -307,6 +315,7 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
     const email = req.query.email as string;
     if (!email) {
+      logger.error('Email parameter is missing for calendar events request');
       return res.status(400).json({ message: 'Email is required' });
     }
 
@@ -318,7 +327,7 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
 
       if (userError) {
         if (userError.code === 'PGRST116') {
-          // User not found
+          logger.error(`Database query error: ${userError.message}`);
           return res.status(404).json({ message: 'User not found' });
         }
         throw new Error(userError.message);
@@ -337,6 +346,7 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
           // Access token has expired, refresh it
           accessToken = await refreshAccessToken(user.refresh_token);
         } catch (error) {
+          logger.error(`Failed to fetch events: ${error}`);
           return res.status(401).json({ message: 'Failed to refresh access token' });
         }
       }
@@ -397,4 +407,5 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
   const port = process.env.PORT || 3333;
   server.listen(port, () => {
     console.log(`Server started on port ${port}`);
+    logger.info(`Server started on port ${port}`);
   });
