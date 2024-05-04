@@ -8,7 +8,7 @@ import cors from 'cors';
 import { config } from 'dotenv';
 import winston from 'winston';
 // import fetch from 'node-fetch';
-import { createGoogleCalendarClient } from './utils/googleCalendarClient';
+import { google } from 'googleapis';
 import { OAuth2Client } from 'google-auth-library';
 import { createClient } from '@supabase/supabase-js';
 
@@ -278,38 +278,34 @@ export async function handleGoogleLogin(req: Request, res: Response) {
 }
 
 
+export function createGoogleCalendarClient(accessToken: string): any {
+  const oAuth2Client = new OAuth2Client(googleClientId);
+  oAuth2Client.setCredentials({
+      access_token: accessToken
+  });
+  return google.calendar({ version: 'v3', auth: oAuth2Client });
+}
+
+// Revised endpoint to handle calendar events
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
-    const email = req.query.email as string;
-    if (!email) {
-      return res.status(400).json({ message: 'Email is required' });
-    }
+      const accessToken = req.headers.authorization?.split(' ')[1];
+      if (!accessToken) {
+          return res.status(401).json({ message: "No access token provided" });
+      }
+      const googleCalendarClient = createGoogleCalendarClient(accessToken);
+      const events = await googleCalendarClient.events.list({
+          calendarId: 'primary',
+          timeMin: new Date().toISOString(),
+          maxResults: 10,
+          singleEvents: true,
+          orderBy: 'startTime',
+      });
 
-    const { data: user, error: userError } = await supabase
-      .from('google_auth')
-      .select('access_token')
-      .eq('email', email)
-      .single();
-
-    if (userError) {
-      throw new Error(userError.message);
-    }
-
-    const accessToken = user.access_token;
-    const googleCalendarClient = createGoogleCalendarClient(accessToken);
-    const events = await googleCalendarClient.events.list({
-      calendarId: 'primary',
-      timeMin: new Date().toISOString(),
-      maxResults: 10,
-      singleEvents: true,
-      orderBy: 'startTime',
-    });
-
-    res.json(events.data.items);
-  } catch (error) {
-    console.error('Error retrieving events:', error);
-    const message = (error as { message: string }).message || 'Failed to fetch events';
-    res.status(500).json({ message });
+      res.json(events.data.items);
+  } catch (error: any) {
+      console.error('Error retrieving events:', error);
+      res.status(500).json({ message: 'Failed to fetch events', error: error.message });
   }
 });
 
