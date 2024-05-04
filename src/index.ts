@@ -244,19 +244,18 @@ export async function handleGoogleLogin(req: Request, res: Response) {
     const userId = payload.sub;  // Google user ID
 
     // Check if user already exists
-    const { data: user, error: userError } = await supabase
+    const { data: users, error: userError } = await supabase
       .from('profiles')
       .select('*')
       .eq('email', email)
-      .single();
 
-    if (userError && userError.message !== 'No rows found') {
-      throw new Error(userError.message);
-    }
-
-    if (user) {
-      return res.status(200).json({ message: 'User already exists', user });
-    }
+      if (userError) {
+        throw new Error(userError.message);
+      }
+  
+      if (users.length > 0) {
+        return res.status(200).json({ message: 'User already exists', user: users[0] });
+      }
 
     // Create new user
     const { data: newUser, error: newUserError } = await supabase
