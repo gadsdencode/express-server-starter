@@ -14,12 +14,15 @@ import { createClient } from '@supabase/supabase-js';
 
 const googleClientId = process.env.GOOGLE_CLIENT_ID;
 const oAuth2Client = new OAuth2Client(googleClientId);
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-interface GoogleLoginRequest extends Request {
-  body: {
-    access_token: string;
-  };
+if (!supabaseUrl || !supabaseKey) {
+  console.error('Supabase URL and Key must be set in environment variables.');
+  process.exit(1);
 }
+
+const supabase = createClient(supabaseUrl, supabaseKey);
 
 config(); // Loads environment variables from .env file
 
@@ -220,50 +223,55 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
-export async function handleGoogleLogin(req: GoogleLoginRequest, res: Response) {
-  if (!req.body.access_token) {
+export async function handleGoogleLogin(req: Request, res: Response) {
+  const { access_token } = req.body;
+  if (!access_token) {
     return res.status(400).json({ message: 'Access token is required' });
   }
 
   try {
-    const { access_token } = req.body;
     const ticket = await oAuth2Client.verifyIdToken({
       idToken: access_token,
       audience: googleClientId,
     });
 
     const payload = ticket.getPayload();
-    if (!payload) throw new Error('No payload available in the ID token');
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: 'Email not found in token payload' });
+    }
 
-    const userId = payload?.sub;
-    const email = payload?.email;
-    if (!email) throw new Error('Email not found in token payload');
+    const email = payload.email;
+    const userId = payload.sub;  // Google user ID
 
-    const supabase = createClient(process.env.NEXT_PUBLIC_SUPABASE_URL, process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY);
-
+    // Check if user already exists
     const { data: user, error: userError } = await supabase
       .from('profiles')
       .select('*')
       .eq('email', email)
       .single();
 
-    if (userError) throw new Error(userError.message);
-
-    if (!user) {
-      const { data: newUser, error: newUserError } = await supabase
-        .from('profiles')
-        .insert([{ email, google_id: userId }])
-        .single();
-
-      if (newUserError) throw new Error(newUserError.message);
-
-      return res.status(201).json({ message: 'User created successfully', user: newUser });
+    if (userError && userError.message !== 'No rows found') {
+      throw new Error(userError.message);
     }
 
-    res.status(200).json({ message: 'Google login successful', user });
+    if (user) {
+      return res.status(200).json({ message: 'User already exists', user });
+    }
+
+    // Create new user
+    const { data: newUser, error: newUserError } = await supabase
+      .from('profiles')
+      .insert([{ email, google_id: userId }])
+      .single();
+
+    if (newUserError) {
+      throw new Error(newUserError.message);
+    }
+
+    return res.status(201).json({ message: 'User created successfully', user: newUser });
   } catch (error) {
-    logger.error('Google login failed:', error);
-    res.status(500).json({ message: 'Google login failed', details: error instanceof Error ? error.message : 'Unknown error' });
+    console.error('Error during Google login:', error);
+    return res.status(500).json({ message: 'Google login failed', details: (error as Error).message });
   }
 }
 
