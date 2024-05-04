@@ -315,6 +315,18 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Access token is missing' });
     }
 
+    // Verify the access token
+    const ticket = await oAuth2Client.verifyIdToken({
+      idToken: accessToken,
+      audience: googleClientId,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || payload.email !== email) {
+      logger.error('Invalid access token');
+      return res.status(401).json({ message: 'Invalid access token' });
+    }
+
     const googleCalendarClient = createGoogleCalendarClient(accessToken);
     const events = await googleCalendarClient.events.list({
       calendarId: 'primary',
@@ -325,8 +337,11 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
     });
 
     res.json(events.data.items);
-  } catch (error) {
+  } catch (error: any) {
     logger.error(`Error retrieving events: ${error}`);
+    if (error.message === 'Invalid Credentials') {
+      return res.status(401).json({ message: 'Invalid access token' });
+    }
     res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
   }
 });
