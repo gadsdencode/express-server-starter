@@ -257,17 +257,20 @@ export async function handleGoogleLogin(req: Request, res: Response) {
         return res.status(200).json({ message: 'User already exists', user: users[0] });
       }
 
+      const { tokens } = await oAuth2Client.getToken(access_token);
+      const { access_token: accessToken, refresh_token: refreshToken } = tokens;
+
     // Create new user
-    const { data: newUser, error: newUserError } = await supabase
+    const { data: upsertedUser, error: upsertError } = await supabase
       .from('google_auth')
-      .insert([{ email, google_id: userId }])
+      .upsert({ email, google_id: userId, access_token: accessToken, refresh_token: refreshToken })
       .single();
 
-    if (newUserError) {
-      throw new Error(newUserError.message);
+    if (upsertError) {
+      throw new Error(upsertError.message);
     }
 
-    return res.status(201).json({ message: 'User created successfully', user: newUser });
+    return res.status(200).json({ message: 'User upserted successfully', user: upsertedUser });
   } catch (error) {
     console.error('Error during Google login:', error);
     return res.status(500).json({ message: 'Google login failed', details: (error as Error).message });
@@ -277,7 +280,22 @@ export async function handleGoogleLogin(req: Request, res: Response) {
 
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
-    const accessToken = req.headers.authorization?.split(' ')[1];
+    const email = req.query.email as string;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const { data: user, error: userError } = await supabase
+      .from('google_auth')
+      .select('access_token')
+      .eq('email', email)
+      .single();
+
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    const accessToken = user.access_token;
     const googleCalendarClient = createGoogleCalendarClient(accessToken);
     const events = await googleCalendarClient.events.list({
       calendarId: 'primary',
