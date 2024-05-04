@@ -315,15 +315,20 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
       return res.status(401).json({ message: 'Access token is missing' });
     }
 
-    // Verify the access token
-    const ticket = await oAuth2Client.verifyIdToken({
-      idToken: accessToken,
-      audience: googleClientId,
-    });
+    try {
+      // Verify the access token
+      const ticket = await oAuth2Client.verifyIdToken({
+        idToken: accessToken,
+        audience: googleClientId,
+      });
 
-    const payload = ticket.getPayload();
-    if (!payload || payload.email !== email) {
-      logger.error('Invalid access token');
+      const payload = ticket.getPayload();
+      if (!payload || payload.email !== email) {
+        logger.error('Invalid access token');
+        return res.status(401).json({ message: 'Invalid access token' });
+      }
+    } catch (error) {
+      logger.error('Error verifying access token:', error);
       return res.status(401).json({ message: 'Invalid access token' });
     }
 
@@ -337,11 +342,8 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
     });
 
     res.json(events.data.items);
-  } catch (error: any) {
+  } catch (error) {
     logger.error(`Error retrieving events: ${error}`);
-    if (error.message === 'Invalid Credentials') {
-      return res.status(401).json({ message: 'Invalid access token' });
-    }
     res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
   }
 });
