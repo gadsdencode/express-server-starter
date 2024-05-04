@@ -258,12 +258,12 @@ export async function handleGoogleLogin(req: Request, res: Response) {
       }
 
       const { tokens } = await oAuth2Client.getToken(access_token);
-      const { access_token: accessToken, refresh_token: refreshToken } = tokens;
+      const { access_token: accessToken, refresh_token: refreshToken, expiry_date: expiryDate } = tokens;
 
     // Create new user
     const { data: upsertedUser, error: upsertError } = await supabase
       .from('google_auth')
-      .upsert({ email, google_id: userId, access_token: accessToken, refresh_token: refreshToken })
+      .upsert({ email, google_id: userId, access_token: accessToken, refresh_token: refreshToken, expiry_date: expiryDate })
       .single();
 
     if (upsertError) {
@@ -275,6 +275,22 @@ export async function handleGoogleLogin(req: Request, res: Response) {
     console.error('Error during Google login:', error);
     return res.status(500).json({ message: 'Google login failed', details: (error as Error).message });
   }
+}
+
+async function refreshAccessToken(refreshToken: string): Promise<string> {
+  const oAuth2Client = new OAuth2Client(googleClientId);
+  oAuth2Client.setCredentials({ refresh_token: refreshToken });
+
+  const { credentials } = await oAuth2Client.refreshAccessToken();
+  const { access_token: accessToken, expiry_date: expiryDate } = credentials;
+
+  // Update the access token and expiry date in the database
+  await supabase
+    .from('google_auth')
+    .update({ access_token: accessToken, expiry_date: expiryDate })
+    .eq('refresh_token', refreshToken);
+
+  return accessToken;
 }
 
 
@@ -289,11 +305,31 @@ export function createGoogleCalendarClient(accessToken: string): any {
 // Revised endpoint to handle calendar events
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
-      const accessToken = req.headers.authorization?.split(' ')[1];
-      if (!accessToken) {
-          return res.status(401).json({ message: "No access token provided" });
-      }
-      const googleCalendarClient = createGoogleCalendarClient(accessToken);
+    const email = req.query.email as string;
+    if (!email) {
+      return res.status(400).json({ message: 'Email is required' });
+    }
+
+    const { data: user, error: userError } = await supabase
+      .from('google_auth')
+      .select('access_token, refresh_token, expiry_date')
+      .eq('email', email)
+      .single();
+
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    let accessToken = user.access_token;
+
+    // Check if the access token has expired
+    const currentTime = new Date().getTime();
+    if (user.expiry_date && user.expiry_date < currentTime) {
+      // Access token has expired, refresh it
+      accessToken = await refreshAccessToken(user.refresh_token);
+    }
+
+    const googleCalendarClient = createGoogleCalendarClient(accessToken);
       const events = await googleCalendarClient.events.list({
           calendarId: 'primary',
           timeMin: new Date().toISOString(),
@@ -301,11 +337,10 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
           singleEvents: true,
           orderBy: 'startTime',
       });
-
       res.json(events.data.items);
-  } catch (error: any) {
+  } catch (error) {
       console.error('Error retrieving events:', error);
-      res.status(500).json({ message: 'Failed to fetch events', error: error.message });
+      res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
   }
 });
 
