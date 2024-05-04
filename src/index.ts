@@ -316,33 +316,46 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
       .eq('email', email)
       .single();
 
-    if (userError) {
-      throw new Error(userError.message);
-    }
-
-    let accessToken = user.access_token;
-
-    // Check if the access token has expired
-    const currentTime = new Date().getTime();
-    if (user.expiry_date && user.expiry_date < currentTime) {
-      // Access token has expired, refresh it
-      accessToken = await refreshAccessToken(user.refresh_token);
-    }
-
-    const googleCalendarClient = createGoogleCalendarClient(accessToken);
+      if (userError) {
+        if (userError.code === 'PGRST116') {
+          // User not found
+          return res.status(404).json({ message: 'User not found' });
+        }
+        throw new Error(userError.message);
+      }
+  
+      if (!user.access_token) {
+        return res.status(401).json({ message: 'Access token not available' });
+      }
+  
+      let accessToken = user.access_token;
+  
+      // Check if the access token has expired
+      const currentTime = new Date().getTime();
+      if (user.expiry_date && user.expiry_date < currentTime) {
+        try {
+          // Access token has expired, refresh it
+          accessToken = await refreshAccessToken(user.refresh_token);
+        } catch (error) {
+          return res.status(401).json({ message: 'Failed to refresh access token' });
+        }
+      }
+  
+      const googleCalendarClient = createGoogleCalendarClient(accessToken);
       const events = await googleCalendarClient.events.list({
-          calendarId: 'primary',
-          timeMin: new Date().toISOString(),
-          maxResults: 10,
-          singleEvents: true,
-          orderBy: 'startTime',
+        calendarId: 'primary',
+        timeMin: new Date().toISOString(),
+        maxResults: 10,
+        singleEvents: true,
+        orderBy: 'startTime',
       });
+  
       res.json(events.data.items);
-  } catch (error) {
+    } catch (error) {
       console.error('Error retrieving events:', error);
       res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
-  }
-});
+    }
+  });
 
   /* Example API Endpoint with Request/Response
   api.get('/search-suggestions', async (req: Request, res: Response) => {
