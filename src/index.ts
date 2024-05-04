@@ -245,7 +245,7 @@ export async function handleGoogleLogin(req: Request, res: Response) {
 
     // Check if user already exists
     const { data: users, error: userError } = await supabase
-      .from('profiles')
+      .from('google_auth')
       .select('*')
       .eq('email', email)
 
@@ -259,7 +259,7 @@ export async function handleGoogleLogin(req: Request, res: Response) {
 
     // Create new user
     const { data: newUser, error: newUserError } = await supabase
-      .from('profiles')
+      .from('google_auth')
       .insert([{ email, google_id: userId }])
       .single();
 
