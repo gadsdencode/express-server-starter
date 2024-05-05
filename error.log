@@ -1,0 +1,6 @@
+2024-05-05T18:10:16.768Z [error]: unhandledRejection: invalid_request
+Error: invalid_request
+    at Gaxios._request (C:\Users\jmart\APP-DEV\express-server-main\node_modules\gaxios\src\gaxios.ts:132:15)
+    at processTicksAndRejections (node:internal/process/task_queues:95:5)
+    at async OAuth2Client.getTokenAsync (C:\Users\jmart\APP-DEV\express-server-main\node_modules\google-auth-library\build\src\auth\oauth2client.js:137:21)
+    at async C:\Users\jmart\APP-DEV\express-server-main\src\index.ts:85:22
