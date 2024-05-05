@@ -31,7 +31,7 @@ const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
 */
 
 
-const app = express();
+export const app = express();
 const server = http.createServer(app);
 
 // CORS setup
