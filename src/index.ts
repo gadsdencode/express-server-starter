@@ -82,28 +82,34 @@ if (!supabaseUrl || !supabaseKey) {
 */
 
 app.post('/auth/google', async (req: Request, res: Response) => {
-  const { tokens } = await oAuth2Client.getToken(req.body.code);
-  console.log(tokens);
-
-  res.json(tokens);
+  try {
+    const { tokens } = await oAuth2Client.getToken(req.body.code);
+    logger.info(`Access tokens retrieved: ${JSON.stringify(tokens)}`);
+    res.json(tokens);
+  } catch (error) {
+    logger.error(`Error retrieving tokens: ${error}`);
+    res.status(500).send('Failed to retrieve tokens');
+  }
 });
 
 app.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
-  const user = new OAuth2Client(
-    clientId,
-    clientSecret
-  );
-  user.setCredentials({
-    refresh_token: req.body.refreshToken
-  });
-  const { credentials } = await user.refreshAccessToken();
-  res.json(credentials);
+  try {
+    const user = new OAuth2Client(clientId, clientSecret);
+    user.setCredentials({ refresh_token: req.body.refreshToken });
+    const { credentials } = await user.refreshAccessToken();
+    logger.info(`Refresh token used successfully for clientId: ${clientId}`);
+    res.json(credentials);
+  } catch (error) {
+    logger.error(`Error refreshing access token: ${error}`);
+    res.status(500).send('Failed to refresh access token');
+  }
 });
 
 
 const api = express.Router();
 
 api.get('/hello', (req, res) => {
+  logger.info('Hello world endpoint called');
   res.status(200).send({ message: 'hello world' });
 });
 
@@ -111,6 +117,5 @@ app.use('/api/v1', api);
 
 const port = process.env.PORT || 3333;
 server.listen(port, () => {
-  console.log(`Server started on port ${port}`);
   logger.info(`Server started on port ${port}`);
 });
