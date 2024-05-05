@@ -231,68 +231,6 @@ api.get('/hello', (req, res) => {
 
 // Add API endpoints here
 
-export async function handleGoogleLogin(req: Request, res: Response) {
-  const { access_token } = req.body;
-  if (!access_token) {
-    return res.status(400).json({ message: 'Access token is required' });
-  }
-
-  try {
-    const ticket = await oAuth2Client.verifyIdToken({
-      idToken: access_token,
-      audience: googleClientId,
-    });
-
-    const payload = ticket.getPayload();
-    if (!payload || !payload.email) {
-      return res.status(400).json({ message: 'Email not found in token payload' });
-    }
-
-    const email = payload.email;
-    const userId = payload.sub;  // Google user ID
-
-    // Check if user already exists
-    const { data: users, error: userError } = await supabase
-      .from('google_auth')
-      .select('*')
-      .eq('email', email)
-
-      if (userError) {
-        throw new Error(userError.message);
-      }
-  
-      if (users.length > 0) {
-        return res.status(200).json({ message: 'User already exists', user: users[0], access_token });
-      }
-
-      const { tokens } = await oAuth2Client.getToken(access_token);
-      const { access_token: accessToken, refresh_token: refreshToken, expiry_date: expiryDate } = tokens;
-
-    // Create new user
-    const { data: upsertedUser, error: upsertError } = await supabase
-      .from('google_auth')
-      .upsert({ email, google_id: userId, access_token: accessToken, refresh_token: refreshToken, expiry_date: expiryDate })
-      .single();
-
-    if (upsertError) {
-      throw new Error(upsertError.message);
-    }
-
-    return res.status(200).json({ message: 'User upserted successfully', user: upsertedUser, access_token });
-  } catch (error) {
-    console.error('Error during Google login:', error);
-    return res.status(500).json({ message: 'Google login failed', details: (error as Error).message });
-  }
-}
-
-
-export function createGoogleCalendarClient(accessToken: string): any {
-  const oAuth2Client = new OAuth2Client(googleClientId);
-  oAuth2Client.setCredentials({
-      access_token: accessToken
-  });
-  return google.calendar({ version: 'v3', auth: oAuth2Client });
-}
 
 // Revised endpoint to handle calendar events
 api.get('/calendarevents', async (req: Request, res: Response) => {
@@ -347,6 +285,64 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
     res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
   }
 });
+
+function createGoogleCalendarClient(accessToken: string): any {
+  const oAuth2Client = new OAuth2Client(googleClientId);
+  oAuth2Client.setCredentials({ access_token: accessToken });
+  return google.calendar({ version: 'v3', auth: oAuth2Client });
+}
+
+async function handleGoogleLogin(req: Request, res: Response): Promise<Response> {
+  const { access_token } = req.body;
+  if (!access_token) {
+    return res.status(400).json({ message: 'Access token is required' });
+  }
+
+  try {
+    const ticket = await oAuth2Client.verifyIdToken({
+      idToken: access_token,
+      audience: googleClientId,
+    });
+
+    const payload = ticket.getPayload();
+    if (!payload || !payload.email) {
+      return res.status(400).json({ message: 'Email not found in token payload' });
+    }
+
+    const email = payload.email;
+    const userId = payload.sub;
+
+    const { data: users, error: userError } = await supabase
+      .from('google_auth')
+      .select('*')
+      .eq('email', email);
+
+    if (userError) {
+      throw new Error(userError.message);
+    }
+
+    if (users.length > 0) {
+      return res.status(200).json({ message: 'User already exists', user: users[0], access_token });
+    }
+
+    const { tokens } = await oAuth2Client.getToken(access_token);
+    const { access_token: accessToken, refresh_token: refreshToken, expiry_date: expiryDate } = tokens;
+
+    const { data: upsertedUser, error: upsertError } = await supabase
+      .from('google_auth')
+      .upsert({ email, google_id: userId, access_token: accessToken, refresh_token: refreshToken, expiry_date: expiryDate })
+      .single();
+
+    if (upsertError) {
+      throw new Error(upsertError.message);
+    }
+
+    return res.status(200).json({ message: 'User upserted successfully', user: upsertedUser, access_token });
+  } catch (error) {
+    logger.error('Error during Google login:', error);
+    return res.status(500).json({ message: 'Google login failed', details: error.toString() });
+  }
+}
 
   /* Example API Endpoint with Request/Response
   api.get('/search-suggestions', async (req: Request, res: Response) => {
