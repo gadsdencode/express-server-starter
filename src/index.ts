@@ -47,6 +47,11 @@ app.use(cors({
   credentials: true,
 }));
 
+app.use((req, res, next) => {
+  res.setHeader('Cross-Origin-Opener-Policy', 'same-origin');
+  next();
+});
+
 // Middleware setup
 app.use(express.json());
 app.use(cookieParser());
