@@ -81,7 +81,9 @@ if (!supabaseUrl || !supabaseKey) {
 }
 */
 
-app.post('/auth/google', async (req: Request, res: Response) => {
+const api = express.Router();
+
+api.post('/auth/google', async (req: Request, res: Response) => {
   try {
     const { tokens } = await oAuth2Client.getToken(req.body.code);
     logger.info(`Access tokens retrieved: ${JSON.stringify(tokens)}`);
@@ -92,7 +94,7 @@ app.post('/auth/google', async (req: Request, res: Response) => {
   }
 });
 
-app.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
+api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
   try {
     const user = new OAuth2Client(clientId, clientSecret);
     user.setCredentials({ refresh_token: req.body.refreshToken });
@@ -104,9 +106,6 @@ app.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
     res.status(500).send('Failed to refresh access token');
   }
 });
-
-
-const api = express.Router();
 
 api.get('/hello', (req, res) => {
   logger.info('Hello world endpoint called');
