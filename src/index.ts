@@ -122,12 +122,12 @@ api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
 
 api.get('/calendarevents', async (req: Request, res: Response) => {
   try {
-    const { access_token } = req.query;
-    if (!access_token) {
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    if (!accessToken) {
       throw new Error('Access token is missing');
     }
 
-    oAuth2Client.setCredentials({ access_token: access_token as string });
+    oAuth2Client.setCredentials({ access_token: accessToken });
 
     const googleCalendarClient = createGoogleCalendarClient();
     const events = await googleCalendarClient.events.list({
