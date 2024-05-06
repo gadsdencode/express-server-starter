@@ -11,6 +11,7 @@ import winston from 'winston';
 import { OAuth2Client } from 'google-auth-library';
 // import { createClient, SupabaseClient  } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
+import { google } from 'googleapis';
 
 dotenv.config();
 
@@ -24,6 +25,13 @@ const oAuth2Client = new OAuth2Client(
   clientSecret,
   'postmessage'
 );
+
+export const createGoogleCalendarClient = () => {
+  return google.calendar({
+    version: 'v3',
+    auth: oAuth2Client,
+  });
+};
 /*
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -109,6 +117,25 @@ api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
   } catch (error) {
     logger.error(`Error refreshing access token: ${error}`);
     res.status(500).send('Failed to refresh access token');
+  }
+});
+
+api.get('/calendarevents', async (req: Request, res: Response) => {
+  try {
+    const googleCalendarClient = createGoogleCalendarClient();
+    const events = await googleCalendarClient.events.list({
+      calendarId: 'primary',
+      timeMin: new Date().toISOString(),
+      maxResults: 10,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    res.json(events.data.items);
+  } catch (error) {
+    console.error('Error retrieving events:', error);
+    const message = (error as { message: string }).message || 'Failed to fetch events';
+    res.status(500).json({ message });
   }
 });
 
