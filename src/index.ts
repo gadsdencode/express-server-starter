@@ -134,6 +134,7 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
       calendarId: 'primary',
       timeMin: new Date().toISOString(),
       maxResults: 10,
+      showDeleted: false,
       singleEvents: true,
       orderBy: 'startTime',
     });
