@@ -43,7 +43,7 @@ export const app = express();
 const server = http.createServer(app);
 
 // CORS setup
-const allowedOrigins = ['http://localhost:3000']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
+const allowedOrigins = ['http://localhost:3000', 'https://kainbridge-mvp.vercel.app']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
