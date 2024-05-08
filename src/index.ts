@@ -12,6 +12,7 @@ import { OAuth2Client } from 'google-auth-library';
 // import { createClient, SupabaseClient  } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { google } from 'googleapis';
+import axios from 'axios';
 
 dotenv.config();
 
@@ -141,11 +142,66 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
 
     res.json(events.data.items);
   } catch (error) {
-    console.error('Error retrieving events:', error);
+    logger.error('Error retrieving events:', error);
     const message = (error as { message: string }).message || 'Failed to fetch events';
     res.status(500).json({ message });
   }
 });
+
+api.get('/userinfo', async (req: Request, res: Response) => {
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  if (!accessToken) {
+    logger.error('Access token is missing');
+    return res.status(401).json({ message: 'Unauthorized: Access token is required' });
+  }
+
+  try {
+    const userInfo = await fetchUserInfo(accessToken);
+    res.json(userInfo);
+  } catch (error: any) {
+    logger.error(`Error fetching user information: ${error.message}`);
+    res.status(500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
+api.get('/user/profile', async (req: Request, res: Response) => {
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  if (!accessToken) {
+      logger.error('Access token is missing');
+      return res.status(401).json({ message: 'Unauthorized: Access token is required' });
+  }
+
+  try {
+      const userInfo = await fetchUserInfo(accessToken);
+      // Assuming fetchUserInfo returns the user data in the desired format
+      res.json({
+          name: userInfo.user.name,
+          email: userInfo.user.email,
+          picture: userInfo.user.picture
+      });
+  } catch (error: any) {
+      logger.error(`Error fetching user profile: ${error.message}`);
+      res.status(500).json({ message: error.message || 'Internal Server Error' });
+  }
+});
+
+
+async function fetchUserInfo(accessToken: string) {
+  const response = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
+    headers: { Authorization: `Bearer ${accessToken}` }
+  });
+  if (!response.data) throw new Error('Failed to fetch user details');
+  return {
+    access_token: accessToken,
+    refresh_token: null, // Refresh token should be handled securely server-side if used
+    user: {
+      name: response.data.name,
+      email: response.data.email,
+      picture: response.data.picture
+    }
+  };
+}
+
 
 api.get('/hello', (req, res) => {
   logger.info('Hello world endpoint called');
