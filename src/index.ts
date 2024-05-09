@@ -16,6 +16,10 @@ import axios from 'axios';
 
 dotenv.config();
 
+const linkedin_redirect_uri = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
+const linkedin_client_id = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
+const linkedin_client_secret = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET;
+
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const clientSecret = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
 /*
@@ -191,9 +195,9 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
       const tokenResponse = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', {
           grant_type: 'authorization_code',
           code: code,
-          redirect_uri: process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI,
-          client_id: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID,
-          client_secret: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET
+          redirect_uri: linkedin_redirect_uri,
+          client_id: linkedin_client_id,
+          client_secret: linkedin_client_secret
       });
       const { access_token } = tokenResponse.data;
       res.json({ access_token });
