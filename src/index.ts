@@ -94,7 +94,7 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 */
-
+//API Endpoints
 const api = express.Router();
 
 api.post('/auth/google', async (req: Request, res: Response) => {
@@ -185,7 +185,25 @@ api.get('/user/profile', async (req: Request, res: Response) => {
   }
 });
 
+api.post('/auth/linkedin', async (req: Request, res: Response) => {
+  try {
+      const { code } = req.body;
+      const tokenResponse = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', {
+          grant_type: 'authorization_code',
+          code: code,
+          redirect_uri: process.env.LINKEDIN_REDIRECT_URI,
+          client_id: process.env.LINKEDIN_CLIENT_ID,
+          client_secret: process.env.LINKEDIN_CLIENT_SECRET
+      });
+      const { access_token } = tokenResponse.data;
+      res.json({ access_token });
+  } catch (error) {
+      logger.error('LinkedIn token retrieval failed:', error);
+      res.status(500).json({ message: 'Failed to retrieve LinkedIn tokens' });
+  }
+});
 
+//Async Functions
 async function fetchUserInfo(accessToken: string) {
   const response = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
     headers: { Authorization: `Bearer ${accessToken}` }
