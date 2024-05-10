@@ -214,17 +214,13 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
   }
 
   try {
-    const userInfoResponse = await axios.get('https://api.linkedin.com/v2/me', {
-        headers: { Authorization: `Bearer ${accessToken}` },
-        params: { projection: '(id,firstName,lastName,picture,locale,email)' }
-    });
-    const userProfile = {
-        name: `${userInfoResponse.data.firstName.localized.en_US} ${userInfoResponse.data.lastName.localized.en_US}`,
-        email: userInfoResponse.data.email,
-        picture: userInfoResponse.data.picture.elements[0].identifiers[0].identifier,
-        locale: userInfoResponse.data.locale
-    };
-    res.json(userProfile);
+    const userInfo = await fetchUserInfoLinkedIn(accessToken);
+      // Assuming fetchUserInfoLinkedIn returns the user data in the desired format
+      res.json({
+          name: userInfo.user.name,
+          email: userInfo.user.email,
+          picture: userInfo.user.picture
+      });
 } catch (error: any) {
     logger.error('Error fetching LinkedIn user information:', error);
     res.status(500).json({ message: 'Failed to fetch user details', error: error.message });
@@ -248,6 +244,48 @@ async function fetchUserInfo(accessToken: string) {
     }
   };
 }
+
+async function fetchUserInfoLinkedIn(accessToken: string) {
+  try {
+    const profileResponse = await axios.get('https://api.linkedin.com/v2/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: {
+        projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams))'
+      }
+    });
+    const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: {
+        q: 'members',
+        projection: '(elements*(handle~))'
+      }
+    });
+
+    const profileData = profileResponse.data;
+    const emailData = emailResponse.data.elements[0]['handle~'].emailAddress;
+
+    const name = `${profileData.firstName.localized.en_US} ${profileData.lastName.localized.en_US}`;
+    const picture = profileData.profilePicture && profileData.profilePicture['displayImage~'].elements.length > 0 
+                    ? profileData.profilePicture['displayImage~'].elements[0].identifiers[0].identifier
+                    : null;
+
+    return {
+      user: {
+        name: name,
+        email: emailData,
+        picture: picture
+      }
+    };
+  } catch (error: any) {
+    logger.error('Error fetching LinkedIn user information:', {
+      error: error.response?.data || error.message,
+      stack: error.stack
+    });
+    throw new Error('Failed to fetch user details');
+  }
+}
+
+
 
 
 api.get('/hello', (req, res) => {
