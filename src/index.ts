@@ -37,17 +37,12 @@ export const createGoogleCalendarClient = () => {
     auth: oAuth2Client,
   });
 };
-/*
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
-*/
 
 
 export const app = express();
 const server = http.createServer(app);
 
-// CORS setup
+
 const allowedOrigins = ['http://localhost:3000', 'https://kainbridge-mvp.vercel.app', 'https://kainbridge-mvp-gadsdencode-pro.vercel.app']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
 app.use(cors({
   origin: (origin, callback) => {
@@ -65,14 +60,14 @@ app.use((req, res, next) => {
   next();
 });
 
-// Middleware setup
+
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.raw({ type: 'application/vnd.custom-type' }));
 app.use(express.text({ type: 'text/html' }));
 
-// Winston Logger setup
+
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -98,7 +93,7 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 */
-//API Endpoints
+
 const api = express.Router();
 
 api.post('/auth/google', async (req: Request, res: Response) => {
