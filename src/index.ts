@@ -219,35 +219,23 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
   }
 
   try {
-      // Fetch user information from LinkedIn
-      const userInfoResponse = await axios.get('https://api.linkedin.com/v2/me', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: {
-              projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams))'
-          }
-      });
-
-      const { data } = userInfoResponse;
-      logger.info('LinkedIn user information retrieved successfully', { user: data });
-
-      // Extract necessary fields from LinkedIn response
-      const { email, firstName, lastName, profilePicture } = userInfoResponse.data;
-      const userProfile = {
-          name: `${firstName.localized.en_US} ${lastName.localized.en_US}`,
-          picture: profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
-          email: email
-      };
-
-      // Send the user profile information as JSON
-      res.json(userProfile);
-    } catch (error: any) {
-      logger.error('Error fetching LinkedIn user information', {
-        error: error.response?.data || error.message,
-        stack: error.stack
-      });
-      res.status(500).json({ message: 'Failed to fetch LinkedIn user details', error: error.message });
-  }
+    const userInfoResponse = await axios.get('https://api.linkedin.com/v2/me', {
+        headers: { Authorization: `Bearer ${accessToken}` },
+        params: { projection: '(id,firstName,lastName,picture,locale,email)' }
+    });
+    const userProfile = {
+        name: `${userInfoResponse.data.firstName.localized.en_US} ${userInfoResponse.data.lastName.localized.en_US}`,
+        email: userInfoResponse.data.email,
+        picture: userInfoResponse.data.picture.elements[0].identifiers[0].identifier,
+        locale: userInfoResponse.data.locale
+    };
+    res.json(userProfile);
+} catch (error: any) {
+    logger.error('Error fetching LinkedIn user information:', error);
+    res.status(500).json({ message: 'Failed to fetch user details', error: error.message });
+}
 });
+
 
 //Async Functions
 async function fetchUserInfo(accessToken: string) {
