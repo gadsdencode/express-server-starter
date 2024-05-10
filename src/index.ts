@@ -16,6 +16,8 @@ import axios from 'axios';
 
 dotenv.config();
 
+const qs = require('querystring');
+
 const LINKEDIN_TOKEN_ENDPOINT = 'https://www.linkedin.com/oauth/v2/accessToken';
 const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
 const CLIENT_ID = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
@@ -204,25 +206,26 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
   }
   
   try {
-    const tokenResponse = await axios.post(LINKEDIN_TOKEN_ENDPOINT, {
+    const params = qs.stringify({
       grant_type: 'authorization_code',
-      code,
-      REDIRECT_URI: REDIRECT_URI,
-      CLIENT_ID: CLIENT_ID,
-      CLIENT_SECRET: CLIENT_SECRET
-    }, {
+      code: code,
+      redirect_uri: REDIRECT_URI,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET
+    });
+
+    const tokenResponse = await axios.post(LINKEDIN_TOKEN_ENDPOINT, params, {
       headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded', 
-        'X-RestLi-Protocol-Version': '2.0.0' 
+        'Content-Type': 'application/x-www-form-urlencoded'
       }
     });
 
     const { access_token } = tokenResponse.data;
-    logger.info('LinkedIn access token successfully retrieved');
+    logger.info('LinkedIn access token successfully retrieved', { access_token });
     res.json({ access_token });
   } catch (error: any) {
-    logger.error('Failed to retrieve LinkedIn access token', error);
-    res.status(500).json({ message: 'Failed to retrieve LinkedIn tokens', details: error.message });
+    logger.error('Failed to retrieve LinkedIn access token', { error: error.response?.data || error.message });
+    res.status(500).json({ message: 'Failed to retrieve LinkedIn tokens', details: error.response?.data || error.message });
   }
 });
 
