@@ -190,6 +190,7 @@ api.get('/user/profile', async (req: Request, res: Response) => {
 });
 
 api.post('/auth/linkedin', async (req: Request, res: Response) => {
+  logger.info('Received LinkedIn auth request', { body: req.body });
   try {
       const { code } = req.body;
       const tokenResponse = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', {
@@ -200,7 +201,7 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
           client_secret: linkedin_client_secret
       });
       const { access_token } = tokenResponse.data;
-      logger.info(`Access tokens retrieved: ${JSON.stringify(tokenResponse.data)}`);
+      logger.info('LinkedIn access token successfully retrieved', { access_token });
       res.json({ access_token });
   } catch (error) {
       logger.error('LinkedIn token retrieval failed:', error);
@@ -210,9 +211,10 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
 
 api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];  // Extract the access token from the Authorization header
+  logger.info('Fetching LinkedIn user information', { accessToken });
 
   if (!accessToken) {
-      logger.error('Access token is missing');
+      logger.error('Access token is missing for LinkedIn userinfo request');
       return res.status(401).json({ message: 'Unauthorized: Access token is required' });
   }
 
@@ -225,6 +227,9 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
           }
       });
 
+      const { data } = userInfoResponse;
+      logger.info('LinkedIn user information retrieved successfully', { user: data });
+
       // Extract necessary fields from LinkedIn response
       const { email, firstName, lastName, profilePicture } = userInfoResponse.data;
       const userProfile = {
@@ -235,9 +240,12 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
 
       // Send the user profile information as JSON
       res.json(userProfile);
-  } catch (error: any) {
-      logger.error('Error fetching LinkedIn user information:', error);
-      res.status(500).json({ message: 'Failed to fetch LinkedIn user details', error: error.response?.data || error.message });
+    } catch (error: any) {
+      logger.error('Error fetching LinkedIn user information', {
+        error: error.response?.data || error.message,
+        stack: error.stack
+      });
+      res.status(500).json({ message: 'Failed to fetch LinkedIn user details', error: error.message });
   }
 });
 
