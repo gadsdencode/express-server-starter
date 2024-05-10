@@ -200,6 +200,7 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
           client_secret: linkedin_client_secret
       });
       const { access_token } = tokenResponse.data;
+      logger.info(`Access tokens retrieved: ${JSON.stringify(tokenResponse.data)}`);
       res.json({ access_token });
   } catch (error) {
       logger.error('LinkedIn token retrieval failed:', error);
