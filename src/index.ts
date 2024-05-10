@@ -16,9 +16,10 @@ import axios from 'axios';
 
 dotenv.config();
 
-const linkedin_redirect_uri = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
-const linkedin_client_id = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
-const linkedin_client_secret = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET;
+const LINKEDIN_TOKEN_ENDPOINT = 'https://www.linkedin.com/oauth/v2/accessToken';
+const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
+const CLIENT_ID = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
+const CLIENT_SECRET = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET;
 
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const clientSecret = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
@@ -97,38 +98,50 @@ if (!supabaseUrl || !supabaseKey) {
 const api = express.Router();
 
 api.post('/auth/google', async (req: Request, res: Response) => {
+  const { code } = req.body;
+  if (!code) {
+    return res.status(400).json({ message: 'Authorization code is required' });
+  }
+
   try {
-    const { tokens } = await oAuth2Client.getToken(req.body.code);
-    logger.info(`Access tokens retrieved: ${JSON.stringify(tokens)}`);
+    const { tokens } = await oAuth2Client.getToken(code);
+    oAuth2Client.setCredentials(tokens);
+    logger.info('Access tokens retrieved:', tokens);
     res.json(tokens);
   } catch (error) {
-    logger.error(`Error retrieving tokens: ${error}`);
-    res.status(500).send('Failed to retrieve tokens');
+    logger.error('Error retrieving tokens:', error);
+    res.status(500).json({ message: 'Failed to retrieve tokens', error: error.toString() });
   }
 });
 
 api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ message: 'Refresh token is required' });
+  }
+
   try {
     const user = new OAuth2Client(clientId, clientSecret);
-    user.setCredentials({ refresh_token: req.body.refreshToken });
+    user.setCredentials({ refresh_token: refreshToken });
     const { credentials } = await user.refreshAccessToken();
-    logger.info(`Refresh token used successfully for clientId: ${clientId}`);
+    logger.info('Refresh token used successfully:', credentials);
     res.json(credentials);
   } catch (error) {
-    logger.error(`Error refreshing access token: ${error}`);
-    res.status(500).send('Failed to refresh access token');
+    logger.error('Error refreshing access token:', error);
+    res.status(500).json({ message: 'Failed to refresh access token', error: error.toString() });
   }
 });
 
+
 api.get('/calendarevents', async (req: Request, res: Response) => {
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  if (!accessToken) {
+    logger.error('Access token is missing');
+    return res.status(401).json({ message: 'Access token is required' });
+  }
+
   try {
-    const accessToken = req.headers.authorization?.split(' ')[1];
-    if (!accessToken) {
-      throw new Error('Access token is missing');
-    }
-
     oAuth2Client.setCredentials({ access_token: accessToken });
-
     const googleCalendarClient = createGoogleCalendarClient();
     const events = await googleCalendarClient.events.list({
       calendarId: 'primary',
@@ -142,10 +155,10 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
     res.json(events.data.items);
   } catch (error) {
     logger.error('Error retrieving events:', error);
-    const message = (error as { message: string }).message || 'Failed to fetch events';
-    res.status(500).json({ message });
+    res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
   }
 });
+
 
 api.get('/userinfo', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
@@ -185,47 +198,69 @@ api.get('/user/profile', async (req: Request, res: Response) => {
 });
 
 api.post('/auth/linkedin', async (req: Request, res: Response) => {
-  logger.info('Received LinkedIn auth request', { body: req.body });
+  const { code } = req.body;
+  if (!code) {
+    return res.status(400).json({ message: 'Authorization code is required' });
+  }
+  
   try {
-      const { code } = req.body;
-      const tokenResponse = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', {
-          grant_type: 'authorization_code',
-          code: code,
-          redirect_uri: linkedin_redirect_uri,
-          client_id: linkedin_client_id,
-          client_secret: linkedin_client_secret
-      });
-      const { access_token } = tokenResponse.data;
-      logger.info('LinkedIn access token successfully retrieved', { access_token });
-      res.json({ access_token });
-  } catch (error) {
-      logger.error('LinkedIn token retrieval failed:', error);
-      res.status(500).json({ message: 'Failed to retrieve LinkedIn tokens' });
+    const tokenResponse = await axios.post(LINKEDIN_TOKEN_ENDPOINT, {
+      grant_type: 'authorization_code',
+      code,
+      REDIRECT_URI: REDIRECT_URI,
+      CLIENT_ID: CLIENT_ID,
+      CLIENT_SECRET: CLIENT_SECRET
+    }, {
+      headers: { 
+        'Content-Type': 'application/x-www-form-urlencoded', 
+        'X-RestLi-Protocol-Version': '2.0.0' 
+      }
+    });
+
+    const { access_token } = tokenResponse.data;
+    logger.info('LinkedIn access token successfully retrieved');
+    res.json({ access_token });
+  } catch (error: any) {
+    logger.error('Failed to retrieve LinkedIn access token', error);
+    res.status(500).json({ message: 'Failed to retrieve LinkedIn tokens', details: error.message });
   }
 });
 
 api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
-  const accessToken = req.headers.authorization?.split(' ')[1];  // Extract the access token from the Authorization header
-  logger.info('Fetching LinkedIn user information', { accessToken });
-
+  const accessToken = req.headers.authorization?.split(' ')[1];
   if (!accessToken) {
-      logger.error('Access token is missing for LinkedIn userinfo request');
-      return res.status(401).json({ message: 'Unauthorized: Access token is required' });
+    logger.error('Access token is missing for LinkedIn userinfo request');
+    return res.status(401).json({ message: 'Unauthorized: Access token is required' });
   }
 
   try {
-    const userInfo = await fetchUserInfoLinkedIn(accessToken);
-      // Assuming fetchUserInfoLinkedIn returns the user data in the desired format
-      res.json({
-          name: userInfo.user.name,
-          email: userInfo.user.email,
-          picture: userInfo.user.picture
-      });
-} catch (error: any) {
-    logger.error('Error fetching LinkedIn user information:', error);
-    res.status(500).json({ message: 'Failed to fetch user details', error: error.message });
-}
+    const profileResponse = await axios.get('https://api.linkedin.com/v2/me', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)' }
+    });
+
+    const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress', {
+      headers: { Authorization: `Bearer ${accessToken}` },
+      params: { q: 'members', projection: '(elements*(handle~))' }
+    });
+
+    const profileData = profileResponse.data;
+    const emailData = emailResponse.data.elements[0]['handle~'].emailAddress;
+
+    const userInfo = {
+      name: `${profileData.firstName.localized.en_US} ${profileData.lastName.localized.en_US}`,
+      email: emailData,
+      picture: profileData.profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
+      locale: profileData.locale
+    };
+
+    res.json(userInfo);
+  } catch (error: any) {
+    logger.error('Error fetching LinkedIn user information', error);
+    res.status(500).json({ message: 'Failed to fetch user details', error: error.response?.data || error.message });
+  }
 });
+
 
 
 //Async Functions
@@ -243,46 +278,6 @@ async function fetchUserInfo(accessToken: string) {
       picture: response.data.picture
     }
   };
-}
-
-async function fetchUserInfoLinkedIn(accessToken: string) {
-  try {
-    const profileResponse = await axios.get('https://api.linkedin.com/v2/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: {
-        projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams))'
-      }
-    });
-    const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: {
-        q: 'members',
-        projection: '(elements*(handle~))'
-      }
-    });
-
-    const profileData = profileResponse.data;
-    const emailData = emailResponse.data.elements[0]['handle~'].emailAddress;
-
-    const name = `${profileData.firstName.localized.en_US} ${profileData.lastName.localized.en_US}`;
-    const picture = profileData.profilePicture && profileData.profilePicture['displayImage~'].elements.length > 0 
-                    ? profileData.profilePicture['displayImage~'].elements[0].identifiers[0].identifier
-                    : null;
-
-    return {
-      user: {
-        name: name,
-        email: emailData,
-        picture: picture
-      }
-    };
-  } catch (error: any) {
-    logger.error('Error fetching LinkedIn user information:', {
-      error: error.response?.data || error.message,
-      stack: error.stack
-    });
-    throw new Error('Failed to fetch user details');
-  }
 }
 
 
