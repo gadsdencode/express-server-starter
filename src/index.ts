@@ -207,6 +207,39 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
   }
 });
 
+api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
+  const accessToken = req.headers.authorization?.split(' ')[1];  // Extract the access token from the Authorization header
+
+  if (!accessToken) {
+      logger.error('Access token is missing');
+      return res.status(401).json({ message: 'Unauthorized: Access token is required' });
+  }
+
+  try {
+      // Fetch user information from LinkedIn
+      const userInfoResponse = await axios.get('https://api.linkedin.com/v2/me', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: {
+              projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams))'
+          }
+      });
+
+      // Extract necessary fields from LinkedIn response
+      const { email, firstName, lastName, profilePicture } = userInfoResponse.data;
+      const userProfile = {
+          name: `${firstName.localized.en_US} ${lastName.localized.en_US}`,
+          picture: profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
+          email: email
+      };
+
+      // Send the user profile information as JSON
+      res.json(userProfile);
+  } catch (error: any) {
+      logger.error('Error fetching LinkedIn user information:', error);
+      res.status(500).json({ message: 'Failed to fetch LinkedIn user details', error: error.response?.data || error.message });
+  }
+});
+
 //Async Functions
 async function fetchUserInfo(accessToken: string) {
   const response = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
