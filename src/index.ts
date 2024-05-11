@@ -48,7 +48,7 @@ const server = http.createServer(app);
 
 const allowedOrigins = ['http://localhost:3000', 'https://kainbridge-mvp.vercel.app', 'https://kainbridge-mvp-gadsdencode-pro.vercel.app']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -202,9 +202,10 @@ api.get('/user/profile', async (req: Request, res: Response) => {
 api.post('/auth/linkedin', async (req: Request, res: Response) => {
   const { code } = req.body;
   if (!code) {
+    logger.error('Authorization code not provided');
     return res.status(400).json({ message: 'Authorization code is required' });
   }
-  
+
   try {
     const params = qs.stringify({
       grant_type: 'authorization_code',
@@ -224,8 +225,18 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
     logger.info('LinkedIn access token successfully retrieved', { access_token });
     res.json({ access_token });
   } catch (error: any) {
-    logger.error('Failed to retrieve LinkedIn access token', { error: error.response?.data || error.message });
-    res.status(500).json({ message: 'Failed to retrieve LinkedIn tokens', details: error.response?.data || error.message });
+    logger.error('Failed to retrieve LinkedIn access token', {
+      error: error.response?.data || error.message,
+      requestDetails: {
+        code,
+        redirect_uri: REDIRECT_URI,
+        client_id: CLIENT_ID
+      }
+    });
+    res.status(500).json({
+      message: 'Failed to retrieve LinkedIn tokens',
+      details: error.response?.data || error.message
+    });
   }
 });
 
