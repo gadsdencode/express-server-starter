@@ -275,40 +275,28 @@ api.post('/auth/linkedin/refresh', async (req: Request, res: Response) => {
 api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
   if (!accessToken) {
-      logger.error('Access token is missing for LinkedIn userinfo request');
-      return res.status(401).json({ message: 'Unauthorized: Access token is required' });
+    logger.error('Access token is missing for LinkedIn userinfo request');
+    return res.status(401).json({ error: 'Access token is required' });
   }
 
   try {
-      const profileResponse = await axios.get(`https://api.linkedin.com/v2/me?projection=(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)`, {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: { projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)' }
-      });
+    const profileResponse = await axios.get(`https://api.linkedin.com/v2/me?projection=(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)`, {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
 
-      if (profileResponse.status === 401) {
-        logger.error('LinkedIn profile API call failed', {statusCode: profileResponse.status, data: profileResponse.data});
-        return res.status(401).json({ message: 'Token has been revoked or expired. Please re-authenticate.' });
-      }
+    const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
 
-      const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress', {
-          headers: { Authorization: `Bearer ${accessToken}` },
-          params: { q: 'members', projection: '(elements*(handle~))' }
-      });
+    const profileData = {
+      name: `${profileResponse.data.firstName.localized.en_US} ${profileResponse.data.lastName.localized.en_US}`,
+      email: emailResponse.data.elements[0]['handle~'].emailAddress,
+      picture: profileResponse.data.profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
+      locale: profileResponse.data.locale
+    };
 
-      if (emailResponse.status !== 200) {
-          throw new Error(`LinkedIn Email API response status: ${emailResponse.status}`);
-      }
-
-      const profileData = profileResponse.data;
-      const emailData = emailResponse.data.elements[0]['handle~'].emailAddress;
-
-      res.json({
-          name: `${profileData.firstName.localized.en_US} ${profileData.lastName.localized.en_US}`,
-          email: emailData,
-          picture: profileData.profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
-          locale: profileData.locale
-      });
-    } catch (error: any) {
+    res.json(profileData);
+  } catch (error: any) {
       logger.error('Error fetching LinkedIn user information', {
         message: error.message,
         response: error.response?.data,
