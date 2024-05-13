@@ -13,10 +13,9 @@ import { OAuth2Client } from 'google-auth-library';
 import dotenv from 'dotenv';
 import { google } from 'googleapis';
 import axios from 'axios';
+import qs from 'querystring';
 
 dotenv.config();
-
-const qs = require('querystring');
 
 const LINKEDIN_TOKEN_ENDPOINT = 'https://www.linkedin.com/oauth/v2/accessToken';
 const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost:3000';
