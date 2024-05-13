@@ -240,6 +240,38 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
   }
 });
 
+api.post('/auth/linkedin/refresh', async (req: Request, res: Response) => {
+  const { refreshToken } = req.body;
+  if (!refreshToken) {
+    return res.status(400).json({ message: 'Refresh token is required' });
+  }
+
+  try {
+    const params = qs.stringify({
+      grant_type: 'refresh_token',
+      refresh_token: refreshToken,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET
+    });
+
+    const tokenResponse = await axios.post(LINKEDIN_TOKEN_ENDPOINT, params, {
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    });
+
+    const { access_token } = tokenResponse.data;
+    logger.info('LinkedIn access token refreshed successfully', { access_token });
+    res.json({ access_token });
+  } catch (error: any) {
+    logger.error('Failed to refresh LinkedIn access token', {
+      error: error.response?.data || error.message
+    });
+    res.status(500).json({
+      message: 'Failed to refresh LinkedIn access token',
+      details: error.response?.data || error.message
+    });
+  }
+});
+
 api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
   if (!accessToken) {
@@ -300,8 +332,6 @@ async function fetchUserInfo(accessToken: string) {
     }
   };
 }
-
-
 
 
 api.get('/hello', (req, res) => {
