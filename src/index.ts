@@ -241,45 +241,46 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
 });
 
 api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    logger.error('Authorization header is missing for LinkedIn userinfo request');
-    return res.status(401).json({ message: 'Unauthorized: Authorization header is required' });
-  }
-
-  const [scheme, accessToken] = authHeader.split(' ');
-  if (scheme !== 'Bearer' || !accessToken) {
-    logger.error('Invalid Authorization header format for LinkedIn userinfo request');
-    return res.status(401).json({ message: 'Unauthorized: Invalid Authorization header format' });
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  if (!accessToken) {
+      logger.error('Access token is missing for LinkedIn userinfo request');
+      return res.status(401).json({ message: 'Unauthorized: Access token is required' });
   }
 
   try {
-    const profileResponse = await axios.get('https://api.linkedin.com/v2/me', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: { projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)' }
-    });
+      const profileResponse = await axios.get('https://api.linkedin.com/v2/me', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: { projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)' }
+      });
 
-    const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress', {
-      headers: { Authorization: `Bearer ${accessToken}` },
-      params: { q: 'members', projection: '(elements*(handle~))' }
-    });
+      if (profileResponse.status !== 200) {
+          throw new Error(`LinkedIn API response status: ${profileResponse.status}`);
+      }
 
-    const profileData = profileResponse.data;
-    const emailData = emailResponse.data.elements[0]['handle~'].emailAddress;
+      const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress', {
+          headers: { Authorization: `Bearer ${accessToken}` },
+          params: { q: 'members', projection: '(elements*(handle~))' }
+      });
 
-    const userInfo = {
-      name: `${profileData.firstName.localized.en_US} ${profileData.lastName.localized.en_US}`,
-      email: emailData,
-      picture: profileData.profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
-      locale: profileData.locale
-    };
+      if (emailResponse.status !== 200) {
+          throw new Error(`LinkedIn Email API response status: ${emailResponse.status}`);
+      }
 
-    res.json(userInfo);
+      const profileData = profileResponse.data;
+      const emailData = emailResponse.data.elements[0]['handle~'].emailAddress;
+
+      res.json({
+          name: `${profileData.firstName.localized.en_US} ${profileData.lastName.localized.en_US}`,
+          email: emailData,
+          picture: profileData.profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
+          locale: profileData.locale
+      });
   } catch (error: any) {
-    logger.error('Error fetching LinkedIn user information', error);
-    res.status(500).json({ message: 'Failed to fetch user details', error: error.response?.data || error.message });
+      logger.error('Error fetching LinkedIn user information', { message: error.message, headers: req.headers });
+      res.status(500).json({ message: 'Failed to fetch user details', error: error.message });
   }
 });
+
 
 
 
