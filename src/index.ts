@@ -307,10 +307,14 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
           picture: profileData.profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
           locale: profileData.locale
       });
-  } catch (error: any) {
-      logger.error('Error fetching LinkedIn user information', { message: error.message, headers: req.headers });
+    } catch (error: any) {
+      logger.error('Error fetching LinkedIn user information', {
+        message: error.message,
+        response: error.response?.data,
+        headers: req.headers
+      });
       res.status(500).json({ message: 'Failed to fetch user details', error: error.message });
-  }
+    }
 });
 
 
