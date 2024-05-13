@@ -19,7 +19,7 @@ dotenv.config();
 const qs = require('querystring');
 
 const LINKEDIN_TOKEN_ENDPOINT = 'https://www.linkedin.com/oauth/v2/accessToken';
-const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost:3000'
+const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost:3000';
 const CLIENT_ID = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET;
 
@@ -280,13 +280,14 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
   }
 
   try {
-      const profileResponse = await axios.get('https://api.linkedin.com/v2/me', {
+      const profileResponse = await axios.get(`https://api.linkedin.com/v2/me?projection=(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)`, {
           headers: { Authorization: `Bearer ${accessToken}` },
           params: { projection: '(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)' }
       });
 
-      if (profileResponse.status !== 200) {
-          throw new Error(`LinkedIn API response status: ${profileResponse.status}`);
+      if (profileResponse.status === 401) {
+        logger.error('LinkedIn profile API call failed', {statusCode: profileResponse.status, data: profileResponse.data});
+        return res.status(401).json({ message: 'Token has been revoked or expired. Please re-authenticate.' });
       }
 
       const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress', {
