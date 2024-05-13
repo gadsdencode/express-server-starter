@@ -305,29 +305,40 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
     }
 });
 
-app.post('/api/linkedin-token', async (req: Request, res: Response) => {
+api.post('/linkedin-token', async (req: Request, res: Response) => {
   const { code } = req.body;
-  const params = new URLSearchParams({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI,
-      client_id: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID,
-      client_secret: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET
-  });
+  if (!code) {
+    logger.error('Authorization code not provided');
+    return res.status(400).json({ message: 'Authorization code is required' });
+  }
 
   try {
-      const response = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', params.toString(), {
-          headers: {
-              'Content-Type': 'application/x-www-form-urlencoded'
-          }
-      });
-      res.send({
-          accessToken: response.data.access_token,
-          expiresIn: response.data.expires_in
-      });
+    const params = qs.stringify({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: REDIRECT_URI,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET
+    });
+
+    const response = await axios.post(LINKEDIN_TOKEN_ENDPOINT, params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
+    res.json({
+      accessToken: response.data.access_token,
+      expiresIn: response.data.expires_in
+    });
   } catch (error: any) {
-      console.error(`Failed to exchange auth code for access token: ${error.response?.data?.error_description || error.message}`);
-      res.status(500).send('Failed to exchange authorization code for access token');
+    logger.error('Failed to exchange authorization code for access token', {
+      details: error.response?.data || error.message
+    });
+    res.status(500).json({
+      message: 'Failed to exchange authorization code for access token',
+      error: error.response?.data || error.message
+    });
   }
 });
 
