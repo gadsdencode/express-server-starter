@@ -306,7 +306,31 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
     }
 });
 
+app.post('/api/linkedin-token', async (req: Request, res: Response) => {
+  const { code } = req.body;
+  const params = new URLSearchParams({
+      grant_type: 'authorization_code',
+      code: code,
+      redirect_uri: process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI,
+      client_id: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID,
+      client_secret: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET
+  });
 
+  try {
+      const response = await axios.post('https://www.linkedin.com/oauth/v2/accessToken', params.toString(), {
+          headers: {
+              'Content-Type': 'application/x-www-form-urlencoded'
+          }
+      });
+      res.send({
+          accessToken: response.data.access_token,
+          expiresIn: response.data.expires_in
+      });
+  } catch (error: any) {
+      console.error(`Failed to exchange auth code for access token: ${error.response?.data?.error_description || error.message}`);
+      res.status(500).send('Failed to exchange authorization code for access token');
+  }
+});
 
 
 //Async Functions
