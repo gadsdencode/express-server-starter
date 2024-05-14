@@ -18,7 +18,7 @@ import qs from 'querystring';
 dotenv.config();
 
 const LINKEDIN_TOKEN_ENDPOINT = 'https://www.linkedin.com/oauth/v2/accessToken';
-const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost';
+const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost:3000/ai';
 const CLIENT_ID = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET;
 
@@ -237,7 +237,7 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
   }
 });
 
-
+// LinkedIn Refresh Token
 api.post('/auth/linkedin/refresh', async (req: Request, res: Response) => {
   const { refreshToken } = req.body;
   if (!refreshToken) {
@@ -270,6 +270,7 @@ api.post('/auth/linkedin/refresh', async (req: Request, res: Response) => {
   }
 });
 
+// LinkedIn UserInfo
 api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
   if (!accessToken) {
@@ -304,6 +305,7 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
     }
 });
 
+// LinkedIn Token
 api.post('/linkedin-token', async (req: Request, res: Response) => {
   const { code } = req.body;
   if (!code) {
