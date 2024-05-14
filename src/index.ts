@@ -327,7 +327,8 @@ api.post('/linkedin-token', async (req: Request, res: Response) => {
     });
     res.json({
       accessToken: response.data.access_token,
-      expiresIn: response.data.expires_in
+      expiresIn: response.data.expires_in,
+      refreshToken: response.data.refresh_token
     });
   } catch (error: any) {
     logger.debug('Requesting LinkedIn access token', { code, redirect_uri: REDIRECT_URI, client_id: CLIENT_ID });
