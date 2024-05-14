@@ -9,7 +9,7 @@ import cors from 'cors';
 import winston from 'winston';
 // import fetch from 'node-fetch';
 import { OAuth2Client } from 'google-auth-library';
-// import { createClient, SupabaseClient  } from '@supabase/supabase-js';
+import { createClient  } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { google } from 'googleapis';
 import axios from 'axios';
@@ -89,15 +89,21 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: 'rejections.log' })
   ]
 });
-/*
-if (!supabaseUrl || !supabaseKey) {
+
+const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;  // Your Supabase Project URL
+const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;  // Your Supabase Anon Key
+
+const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+if (!SUPABASE_URL || !SUPABASE_KEY) {
   logger.error('Supabase URL and Key must be set in environment variables.');
   process.exit(1);
 }
-*/
+
 
 const api = express.Router();
 
+//Google OAuth
 api.post('/auth/google', async (req: Request, res: Response) => {
   const { code } = req.body;
   if (!code) {
@@ -133,7 +139,7 @@ api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
   }
 });
 
-
+// Google Calendar
 api.get('/calendarevents', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
   if (!accessToken) {
@@ -160,7 +166,7 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
   }
 });
 
-
+// Google UserData
 api.get('/userinfo', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
   if (!accessToken) {
@@ -198,6 +204,7 @@ api.get('/user/profile', async (req: Request, res: Response) => {
   }
 });
 
+// LinkedIn OAuth
 api.post('/auth/linkedin', async (req: Request, res: Response) => {
   const { code } = req.body;
   if (!code) {
@@ -206,38 +213,30 @@ api.post('/auth/linkedin', async (req: Request, res: Response) => {
   }
 
   try {
-    const params = qs.stringify({
-      grant_type: 'authorization_code',
-      code: code,
-      redirect_uri: REDIRECT_URI,
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET
-    });
-
-    const tokenResponse = await axios.post(LINKEDIN_TOKEN_ENDPOINT, params, {
-      headers: { 
-        'Content-Type': 'application/x-www-form-urlencoded'
+    // Use Supabase to exchange the code for a session
+    const { data, error } = await supabase.auth.signInWithOAuth({
+      provider: 'linkedin_oidc',
+      options: {
+        redirectTo: REDIRECT_URI
       }
     });
-
-    const { access_token } = tokenResponse.data;
-    logger.info('LinkedIn access token successfully retrieved', { access_token });
-    res.json({ access_token });
+    
+    if (error) throw error;
+    
+    logger.info('User session created with LinkedIn OAuth:', { data });
+    res.json({ data });
+    
   } catch (error: any) {
-    logger.error('Failed to retrieve LinkedIn access token', {
-      error: error.response?.data || error.message,
-      requestDetails: {
-        code,
-        redirect_uri: REDIRECT_URI,
-        client_id: CLIENT_ID
-      }
+    logger.error('Failed to exchange LinkedIn authorization code for a session', {
+      details: error.message
     });
     res.status(500).json({
-      message: 'Failed to retrieve LinkedIn tokens',
-      details: error.response?.data || error.message
+      message: 'Failed to exchange LinkedIn authorization code for a session',
+      error: error.message
     });
   }
 });
+
 
 api.post('/auth/linkedin/refresh', async (req: Request, res: Response) => {
   const { refreshToken } = req.body;
