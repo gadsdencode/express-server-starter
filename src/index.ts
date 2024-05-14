@@ -306,7 +306,7 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
     }
 });
 
-api.post('/linkedin-token', async (req: Request, res: Response) => {
+api.get('/linkedin-token', async (req: Request, res: Response) => {
   const { code } = req.body;
   if (!code) {
     logger.error('Authorization code not provided');
