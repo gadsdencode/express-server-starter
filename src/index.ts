@@ -282,7 +282,6 @@ api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
     const profileResponse = await axios.get(`https://api.linkedin.com/v2/me?projection=(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)`, {
       headers: { Authorization: `Bearer ${accessToken}` }
     });
-    
 
     const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))', {
       headers: { Authorization: `Bearer ${accessToken}` }
@@ -313,30 +312,26 @@ api.post('/linkedin-token', async (req: Request, res: Response) => {
     return res.status(400).json({ message: 'Authorization code is required' });
   }
 
-  const params = qs.stringify({
-    grant_type: 'authorization_code',
-    code,
-    redirect_uri: REDIRECT_URI,
-    client_id: CLIENT_ID,
-    client_secret: CLIENT_SECRET
-  });
-
   try {
-    const response = await axios.post(LINKEDIN_TOKEN_ENDPOINT, params, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
+    const params = qs.stringify({
+      grant_type: 'authorization_code',
+      code,
+      redirect_uri: REDIRECT_URI,
+      client_id: CLIENT_ID,
+      client_secret: CLIENT_SECRET
     });
+
+    const response = await axios.post(LINKEDIN_TOKEN_ENDPOINT, params, {
+      headers: {
+        'Content-Type': 'application/x-www-form-urlencoded'
+      }
+    });
+
     res.json({
       accessToken: response.data.access_token,
-      expiresIn: response.data.expires_in,
-      refreshToken: response.data.refresh_token
+      expiresIn: response.data.expires_in
     });
   } catch (error: any) {
-    logger.debug('Requesting LinkedIn access token', { code, redirect_uri: REDIRECT_URI, client_id: CLIENT_ID });
-    logger.error('Detailed error', {
-      error: error.response?.data || error.message,
-      status: error.response?.status,
-      headers: error.response?.headers
-    });
     logger.error('Failed to exchange authorization code for access token', {
       details: error.response?.data || error.message
     });
