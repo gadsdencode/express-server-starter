@@ -18,7 +18,7 @@ import qs from 'querystring';
 dotenv.config();
 
 const LINKEDIN_TOKEN_ENDPOINT = 'https://www.linkedin.com/oauth/v2/accessToken';
-const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost:3000';
+const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost';
 const CLIENT_ID = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
 const CLIENT_SECRET = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET;
 
