@@ -9,18 +9,12 @@ import cors from 'cors';
 import winston from 'winston';
 // import fetch from 'node-fetch';
 import { OAuth2Client } from 'google-auth-library';
-import { createClient  } from '@supabase/supabase-js';
+// import { createClient, SupabaseClient  } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { google } from 'googleapis';
 import axios from 'axios';
-import qs from 'querystring';
 
 dotenv.config();
-
-const LINKEDIN_TOKEN_ENDPOINT = 'https://www.linkedin.com/oauth/v2/accessToken';
-const REDIRECT_URI = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI || 'http://localhost:3000/ai';
-const CLIENT_ID = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID;
-const CLIENT_SECRET = process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET;
 
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const clientSecret = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
@@ -39,15 +33,20 @@ export const createGoogleCalendarClient = () => {
     auth: oAuth2Client,
   });
 };
+/*
+const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
+*/
 
 
 export const app = express();
 const server = http.createServer(app);
 
-
-const allowedOrigins = ['http://localhost:3000', 'https://kainbridge-mvp.vercel.app', 'https://kainbridge-mvp-gadsdencode-pro.vercel.app']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
+// CORS setup
+const allowedOrigins = ['http://localhost:3000', 'https://kainbridge-mvp.vercel.app']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
 app.use(cors({
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
+  origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
       callback(null, true);
     } else {
@@ -62,14 +61,14 @@ app.use((req, res, next) => {
   next();
 });
 
-
+// Middleware setup
 app.use(express.json());
 app.use(cookieParser());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.raw({ type: 'application/vnd.custom-type' }));
 app.use(express.text({ type: 'text/html' }));
 
-
+// Winston Logger setup
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -89,66 +88,48 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: 'rejections.log' })
   ]
 });
-
-const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL!;  // Your Supabase Project URL
-const SUPABASE_KEY = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;  // Your Supabase Anon Key
-
-const supabase = createClient(SUPABASE_URL, SUPABASE_KEY);
-
-if (!SUPABASE_URL || !SUPABASE_KEY) {
+/*
+if (!supabaseUrl || !supabaseKey) {
   logger.error('Supabase URL and Key must be set in environment variables.');
   process.exit(1);
 }
-
+*/
 
 const api = express.Router();
 
-//Google OAuth
 api.post('/auth/google', async (req: Request, res: Response) => {
-  const { code } = req.body;
-  if (!code) {
-    return res.status(400).json({ message: 'Authorization code is required' });
-  }
-
   try {
-    const { tokens } = await oAuth2Client.getToken(code);
-    oAuth2Client.setCredentials(tokens);
-    logger.info('Access tokens retrieved:', tokens);
+    const { tokens } = await oAuth2Client.getToken(req.body.code);
+    logger.info(`Access tokens retrieved: ${JSON.stringify(tokens)}`);
     res.json(tokens);
   } catch (error) {
-    logger.error('Error retrieving tokens:', error);
-    res.status(500).json({ message: 'Failed to retrieve tokens', error: error.toString() });
+    logger.error(`Error retrieving tokens: ${error}`);
+    res.status(500).send('Failed to retrieve tokens');
   }
 });
 
 api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) {
-    return res.status(400).json({ message: 'Refresh token is required' });
-  }
-
   try {
     const user = new OAuth2Client(clientId, clientSecret);
-    user.setCredentials({ refresh_token: refreshToken });
+    user.setCredentials({ refresh_token: req.body.refreshToken });
     const { credentials } = await user.refreshAccessToken();
-    logger.info('Refresh token used successfully:', credentials);
+    logger.info(`Refresh token used successfully for clientId: ${clientId}`);
     res.json(credentials);
   } catch (error) {
-    logger.error('Error refreshing access token:', error);
-    res.status(500).json({ message: 'Failed to refresh access token', error: error.toString() });
+    logger.error(`Error refreshing access token: ${error}`);
+    res.status(500).send('Failed to refresh access token');
   }
 });
 
-// Google Calendar
 api.get('/calendarevents', async (req: Request, res: Response) => {
-  const accessToken = req.headers.authorization?.split(' ')[1];
-  if (!accessToken) {
-    logger.error('Access token is missing');
-    return res.status(401).json({ message: 'Access token is required' });
-  }
-
   try {
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    if (!accessToken) {
+      throw new Error('Access token is missing');
+    }
+
     oAuth2Client.setCredentials({ access_token: accessToken });
+
     const googleCalendarClient = createGoogleCalendarClient();
     const events = await googleCalendarClient.events.list({
       calendarId: 'primary',
@@ -162,11 +143,11 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
     res.json(events.data.items);
   } catch (error) {
     logger.error('Error retrieving events:', error);
-    res.status(500).json({ message: 'Failed to fetch events', error: error.toString() });
+    const message = (error as { message: string }).message || 'Failed to fetch events';
+    res.status(500).json({ message });
   }
 });
 
-// Google UserData
 api.get('/userinfo', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
   if (!accessToken) {
@@ -204,147 +185,7 @@ api.get('/user/profile', async (req: Request, res: Response) => {
   }
 });
 
-// LinkedIn OAuth
-api.post('/auth/linkedin', async (req: Request, res: Response) => {
-  const { code } = req.body;
-  if (!code) {
-    logger.error('Authorization code not provided');
-    return res.status(400).json({ message: 'Authorization code is required' });
-  }
 
-  try {
-    // Use Supabase to exchange the code for a session
-    const { data, error } = await supabase.auth.signInWithOAuth({
-      provider: 'linkedin_oidc',
-      options: {
-        redirectTo: REDIRECT_URI
-      }
-    });
-    
-    if (error) throw error;
-    
-    logger.info('User session created with LinkedIn OAuth:', { data });
-    res.json({ data });
-    
-  } catch (error: any) {
-    logger.error('Failed to exchange LinkedIn authorization code for a session', {
-      details: error.message
-    });
-    res.status(500).json({
-      message: 'Failed to exchange LinkedIn authorization code for a session',
-      error: error.message
-    });
-  }
-});
-
-// LinkedIn Refresh Token
-api.post('/auth/linkedin/refresh', async (req: Request, res: Response) => {
-  const { refreshToken } = req.body;
-  if (!refreshToken) {
-    return res.status(400).json({ message: 'Refresh token is required' });
-  }
-
-  try {
-    const params = qs.stringify({
-      grant_type: 'refresh_token',
-      refresh_token: refreshToken,
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET
-    });
-
-    const tokenResponse = await axios.post(LINKEDIN_TOKEN_ENDPOINT, params, {
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' }
-    });
-
-    const { access_token } = tokenResponse.data;
-    logger.info('LinkedIn access token refreshed successfully', { access_token });
-    res.json({ access_token });
-  } catch (error: any) {
-    logger.error('Failed to refresh LinkedIn access token', {
-      error: error.response?.data || error.message
-    });
-    res.status(500).json({
-      message: 'Failed to refresh LinkedIn access token',
-      details: error.response?.data || error.message
-    });
-  }
-});
-
-// LinkedIn UserInfo
-api.get('/linkedin/userinfo', async (req: Request, res: Response) => {
-  const accessToken = req.headers.authorization?.split(' ')[1];
-  if (!accessToken) {
-    logger.error('Access token is missing for LinkedIn userinfo request');
-    return res.status(401).json({ error: 'Access token is required' });
-  }
-
-  try {
-    const profileResponse = await axios.get(`https://api.linkedin.com/v2/me?projection=(id,firstName,lastName,profilePicture(displayImage~:playableStreams),locale)`, {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-
-    const emailResponse = await axios.get('https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))', {
-      headers: { Authorization: `Bearer ${accessToken}` }
-    });
-
-    const profileData = {
-      name: `${profileResponse.data.firstName.localized.en_US} ${profileResponse.data.lastName.localized.en_US}`,
-      email: emailResponse.data.elements[0]['handle~'].emailAddress,
-      picture: profileResponse.data.profilePicture['displayImage~'].elements[0].identifiers[0].identifier,
-      locale: profileResponse.data.locale
-    };
-
-    res.json(profileData);
-  } catch (error: any) {
-      logger.error('Error fetching LinkedIn user information', {
-        message: error.message,
-        response: error.response?.data,
-        headers: req.headers
-      });
-      res.status(500).json({ message: 'Failed to fetch user details', error: error.message });
-    }
-});
-
-// LinkedIn Token
-api.post('/linkedin-token', async (req: Request, res: Response) => {
-  const { code } = req.body;
-  if (!code) {
-    logger.error('Authorization code not provided');
-    return res.status(400).json({ message: 'Authorization code is required' });
-  }
-
-  try {
-    const params = qs.stringify({
-      grant_type: 'authorization_code',
-      code,
-      redirect_uri: REDIRECT_URI,
-      client_id: CLIENT_ID,
-      client_secret: CLIENT_SECRET
-    });
-
-    const response = await axios.post(LINKEDIN_TOKEN_ENDPOINT, params, {
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded'
-      }
-    });
-
-    res.json({
-      accessToken: response.data.access_token,
-      expiresIn: response.data.expires_in
-    });
-  } catch (error: any) {
-    logger.error('Failed to exchange authorization code for access token', {
-      details: error.response?.data || error.message
-    });
-    res.status(500).json({
-      message: 'Failed to exchange authorization code for access token',
-      error: error.response?.data || error.message
-    });
-  }
-});
-
-
-//Async Functions
 async function fetchUserInfo(accessToken: string) {
   const response = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
     headers: { Authorization: `Bearer ${accessToken}` }

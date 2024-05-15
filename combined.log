@@ -5,3 +5,9 @@ Error: invalid_request
     at processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async OAuth2Client.getTokenAsync (C:\Users\jmart\APP-DEV\express-server-main\node_modules\google-auth-library\build\src\auth\oauth2client.js:137:21)
     at async C:\Users\jmart\APP-DEV\express-server-main\src\index.ts:85:22
+2024-05-14T13:53:09.308Z [info]: Server started on port 3333
+2024-05-14T14:01:43.686Z [info]: Server started on port 3333
+2024-05-14T14:30:34.180Z [info]: Server started on port 3333
+2024-05-15T08:29:50.065Z [info]: Server started on port 3333
+2024-05-15T10:17:50.512Z [info]: Server started on port 3333
+2024-05-15T10:25:28.941Z [info]: Server started on port 3333
