@@ -43,6 +43,7 @@ const logger = winston.createLogger({
     const data = await Response.json();
     logger.info('LinkedIn access token data', data);
     if (!Response.ok) {
+      logger.error('Failed to fetch LinkedIn access token', data);
       throw new Error(data.error_description || 'Failed to fetch access token');
     }
     logger.info('LinkedIn access token', data.access_token);
@@ -50,16 +51,18 @@ const logger = winston.createLogger({
   }
   
   export async function getLinkedInData(accessToken: string, endpoint: string): Promise<any> {
-    const Response = await fetch(`https://api.linkedin.com/v2/${endpoint}`, {
+    const response = await fetch(`https://api.linkedin.com/v2/${endpoint}`, {
       headers: {
         Authorization: `Bearer ${accessToken}`,
         'X-RestLi-Protocol-Version': '2.0.0',
       },
     });
   
-    if (!Response.ok) {
-      throw new Error(`LinkedIn API error: ${Response.statusText}`);
+    if (!response.ok) {
+      const errorData = await response.json();
+      logger.error(`LinkedIn API error: ${response.statusText}`, errorData);
+      throw new Error(errorData.message || 'Failed to fetch LinkedIn data');
     }
   
-    return await Response.json();
+    return await response.json();
   }

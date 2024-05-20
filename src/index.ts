@@ -214,6 +214,7 @@ api.post('/linkedin/exchange-token', async (req: Request, res: Response) => {
 api.get('/linkedin/data', async (req: Request, res: Response) => {
   logger.info('Received request to fetch LinkedIn data');
   const accessToken = req.headers.authorization?.split(' ')[1];
+  logger.info('Received request to fetch LinkedIn profile');
   console.log('Received Access Token:', accessToken); // Debugging: Log received access token
   if (!accessToken) {
     logger.error('Access token is missing');
