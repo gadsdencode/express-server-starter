@@ -35,8 +35,8 @@ const logger = winston.createLogger({
         grant_type: 'authorization_code',
         code: code,
         redirect_uri: redirectUri,
-        client_id: process.env.LINKEDIN_CLIENT_ID!,
-        client_secret: process.env.LINKEDIN_CLIENT_SECRET!,
+        client_id: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_ID!,
+        client_secret: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET!,
       }),
     });
   logger.info('LinkedIn access token response', Response);
