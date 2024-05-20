@@ -4,3 +4,18 @@ Error: invalid_request
     at processTicksAndRejections (node:internal/process/task_queues:95:5)
     at async OAuth2Client.getTokenAsync (C:\Users\jmart\APP-DEV\express-server-main\node_modules\google-auth-library\build\src\auth\oauth2client.js:137:21)
     at async C:\Users\jmart\APP-DEV\express-server-main\src\index.ts:85:22
+2024-05-16T20:29:09.392Z [error]: Access token is missing
+2024-05-16T20:35:16.146Z [error]: Access token is missing
+2024-05-16T20:39:06.861Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-16T20:49:29.781Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-16T20:49:37.859Z [error]: Authorization code or redirect URI is missing
+2024-05-16T20:50:08.101Z [error]: Authorization code or redirect URI is missing
+2024-05-16T20:57:20.428Z [error]: Authorization code or redirect URI is missing
+2024-05-17T08:39:43.965Z [error]: Authorization code or redirect URI is missing
+2024-05-17T08:39:49.259Z [error]: Authorization code or redirect URI is missing
+2024-05-17T09:21:53.976Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-17T09:23:55.475Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-17T09:29:08.565Z [error]: Access token is missing
+2024-05-17T09:29:17.886Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-17T10:18:49.373Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-17T12:17:25.423Z [error]: Access token is missing

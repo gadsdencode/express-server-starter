@@ -11,3 +11,39 @@ Error: invalid_request
 2024-05-15T08:29:50.065Z [info]: Server started on port 3333
 2024-05-15T10:17:50.512Z [info]: Server started on port 3333
 2024-05-15T10:25:28.941Z [info]: Server started on port 3333
+2024-05-16T20:25:43.826Z [info]: Server started on port 3333
+2024-05-16T20:29:09.392Z [error]: Access token is missing
+2024-05-16T20:35:12.029Z [info]: Server started on port 3333
+2024-05-16T20:35:16.146Z [error]: Access token is missing
+2024-05-16T20:39:06.861Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-16T20:48:29.443Z [info]: Server started on port 3333
+2024-05-16T20:49:29.781Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-16T20:49:37.859Z [error]: Authorization code or redirect URI is missing
+2024-05-16T20:50:08.101Z [error]: Authorization code or redirect URI is missing
+2024-05-16T20:56:58.202Z [info]: Server started on port 3333
+2024-05-16T20:57:20.428Z [error]: Authorization code or redirect URI is missing
+2024-05-17T08:37:55.831Z [info]: Server started on port 3333
+2024-05-17T08:38:45.140Z [info]: Server started on port 3333
+2024-05-17T08:39:43.965Z [error]: Authorization code or redirect URI is missing
+2024-05-17T08:39:49.259Z [error]: Authorization code or redirect URI is missing
+2024-05-17T09:21:53.976Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-17T09:23:55.475Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-17T09:29:08.565Z [error]: Access token is missing
+2024-05-17T09:29:17.886Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-17T10:18:49.373Z [error]: Error fetching LinkedIn data: Request failed with status code 401
+2024-05-17T10:33:46.691Z [info]: Server started on port 3333
+2024-05-17T10:57:04.534Z [info]: Server started on port 3333
+2024-05-17T11:08:17.570Z [info]: Server started on port 3333
+2024-05-17T11:29:13.017Z [info]: Server started on port 3333
+2024-05-17T11:33:09.041Z [info]: Server started on port 3333
+2024-05-17T11:35:19.791Z [info]: Server started on port 3333
+2024-05-17T11:38:34.474Z [info]: Hello world endpoint called
+2024-05-17T11:39:53.792Z [info]: Server started on port 3333
+2024-05-17T11:58:00.415Z [info]: Server started on port 3333
+2024-05-17T12:03:24.570Z [info]: Server started on port 3333
+2024-05-17T12:17:09.958Z [info]: Hello world endpoint called
+2024-05-17T12:17:25.422Z [info]: Received request to fetch LinkedIn data
+2024-05-17T12:17:25.423Z [error]: Access token is missing
+2024-05-20T08:24:37.629Z [info]: Server started on port 3333
+2024-05-20T11:52:37.645Z [info]: Server started on port 3333
+2024-05-20T12:24:18.663Z [info]: Server started on port 3333
