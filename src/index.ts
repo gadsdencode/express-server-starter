@@ -47,7 +47,7 @@ export const app = express();
 const server = http.createServer(app);
 
 // CORS setup
-const allowedOrigins = ['http://localhost:3000', 'https://kainbridge-mvp.vercel.app']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
+const allowedOrigins = ['http://localhost:3000', 'https://kainbridge-mvp.vercel.app', 'https://kainbridge-mvp-gadsdencode-pro.vercel.app/ai', 'https://kainbridge-mvp-gadsdencode-pro.vercel.app']; // Add additional domains as needed comma separated ['https://domain1.com','https://domain2.com']
 app.use(cors({
   origin: (origin, callback) => {
     if (!origin || allowedOrigins.includes(origin)) {
@@ -191,10 +191,7 @@ api.get('/user/profile', async (req: Request, res: Response) => {
 
 // LinkedIn APIs
 api.post('/linkedin/exchange-token', async (req: Request, res: Response) => {
-  logger.info('Received request to exchange LinkedIn code for access token');
   const { code, redirectUri } = req.body;
-  logger.info('Code:', code);
-  logger.info('Redirect URI:', redirectUri);
 
   if (!code || !redirectUri) {
     logger.error('Authorization code and redirect URI are required');
@@ -203,7 +200,6 @@ api.post('/linkedin/exchange-token', async (req: Request, res: Response) => {
 
   try {
     const accessToken = await getLinkedInAccessToken(code, redirectUri);
-    logger.info('Access token:', accessToken);
     res.json({ accessToken });
   } catch (error: any) {
     logger.error('Error exchanging code for access token:', error);
@@ -232,8 +228,6 @@ api.get('/linkedin/data', async (req: Request, res: Response) => {
 
 api.get('/linkedin/profile', async (req: Request, res: Response) => {
   const accessToken = req.headers.authorization?.split(' ')[1];
-  logger.info('Received request to fetch LinkedIn profile');
-  logger.info('Access token:', accessToken);
 
   if (!accessToken) {
     logger.error('Access token is missing');
@@ -241,19 +235,16 @@ api.get('/linkedin/profile', async (req: Request, res: Response) => {
   }
 
   try {
-    logger.info('Fetching LinkedIn profile data');
-    const profileData = await getLinkedInData(accessToken, 'me');
-    logger.info('LinkedIn profile data:', profileData);
+    const profileData = await getLinkedInData(accessToken, 'userinfo');
     res.json(profileData);
   } catch (error: any) {
+    logger.error('Error fetching LinkedIn profile:', error);
     res.status(500).json({ message: error.message });
   }
 });
 
 api.get('/linkedin/skills', async (req: Request, res: Response) => {
-  logger.info('Received request to fetch LinkedIn skills');
   const accessToken = req.headers.authorization?.split(' ')[1];
-  logger.info('Access token:', accessToken);
 
   if (!accessToken) {
     logger.error('Access token is missing');
@@ -261,9 +252,7 @@ api.get('/linkedin/skills', async (req: Request, res: Response) => {
   }
 
   try {
-    logger.info('Fetching LinkedIn skills data');
     const skillsData = await getLinkedInData(accessToken, 'skills');
-    logger.info('LinkedIn skills data:', skillsData);
     res.json(skillsData);
   } catch (error: any) {
     logger.error('Error fetching LinkedIn skills:', error);
@@ -295,6 +284,18 @@ api.get('/hello', (req, res) => {
 });
 
 app.use('/api/v1', api);
+
+app._router.stack.forEach((middleware) => {
+  if (middleware.route) { // routes registered directly on the app
+    console.log(middleware.route.path);
+    logger.info(middleware.route.path);
+  } else if (middleware.name === 'router') { // router middleware 
+    middleware.handle.stack.forEach((handler) => {
+      console.log(handler.route.path);
+      logger.info(handler.route.path);
+    });
+  }
+});
 
 const port = process.env.PORT || 3333;
 server.listen(port, () => {

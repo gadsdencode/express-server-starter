@@ -19,3 +19,166 @@ Error: invalid_request
 2024-05-17T09:29:17.886Z [error]: Error fetching LinkedIn data: Request failed with status code 401
 2024-05-17T10:18:49.373Z [error]: Error fetching LinkedIn data: Request failed with status code 401
 2024-05-17T12:17:25.423Z [error]: Access token is missing
+2024-05-20T15:43:23.038Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:43:23.098Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:43:23.142Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:43:23.147Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T15:43:23.187Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:43:23.188Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T15:45:11.258Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:45:11.323Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:45:11.377Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:45:11.378Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T15:45:11.426Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:45:11.427Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T15:45:23.161Z [error]: Access token is missing
+2024-05-20T15:53:51.156Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:53:51.160Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-20T15:53:51.203Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:53:51.204Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-20T15:53:51.270Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:53:51.271Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T15:53:51.322Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:53:51.323Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T15:56:58.984Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:56:58.988Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-20T15:56:59.029Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:56:59.030Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-20T15:56:59.101Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:56:59.102Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T15:56:59.143Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T15:56:59.144Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T16:14:03.242Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T16:14:03.243Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-20T16:14:03.292Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T16:14:03.292Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-20T16:14:03.337Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T16:14:03.338Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T16:14:03.388Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-20T16:14:03.389Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-20T16:18:02.749Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-20T16:18:02.750Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-20T16:18:02.845Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-20T16:18:02.846Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-20T16:18:02.920Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-20T16:18:02.921Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-20T16:18:03.036Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-20T16:18:03.037Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-20T16:23:40.694Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-20T16:23:40.694Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-20T16:23:40.862Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-20T16:23:40.862Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-20T16:23:40.865Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-20T16:23:40.866Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-20T16:23:40.978Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-20T16:23:40.978Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-20T16:23:54.486Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-20T16:23:54.487Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-20T16:23:54.584Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-20T16:23:54.585Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T18:52:04.121Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-22T18:52:04.128Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T18:52:04.223Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-22T18:52:04.223Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T18:56:04.220Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-22T18:56:04.222Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T18:56:04.318Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-22T18:56:04.318Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T18:57:14.821Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-22T18:57:14.822Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T18:57:14.930Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-22T18:57:14.930Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T19:01:11.121Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-22T19:01:11.122Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T19:01:11.215Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-22T19:01:11.215Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-22T20:25:07.464Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:07.471Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:07.578Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:07.579Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:07.728Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:07.729Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:07.871Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:07.872Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:38.365Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:38.367Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:38.549Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:38.550Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:38.646Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:38.647Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:38.763Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:38.763Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:53.463Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:53.464Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:25:53.649Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-22T20:25:53.651Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-22T20:52:13.682Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:13.686Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-22T20:52:13.768Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:13.769Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-22T20:52:13.818Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:13.818Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-22T20:52:13.852Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:13.853Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-22T20:52:13.898Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:13.899Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-22T20:52:13.939Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:13.941Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-22T20:52:13.986Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:13.987Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-22T20:52:14.065Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:14.066Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-22T20:52:36.548Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:36.554Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-22T20:52:36.662Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:36.663Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-22T20:52:36.690Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:36.691Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-22T20:52:36.746Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:36.747Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-22T20:52:36.775Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:36.776Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-22T20:52:36.818Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:36.819Z [error]: Error fetching LinkedIn profile: Invalid access token
+2024-05-22T20:52:36.846Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:36.847Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-22T20:52:36.922Z [error]: LinkedIn API error: Unauthorized Invalid access token
+2024-05-22T20:52:36.923Z [error]: Error fetching LinkedIn skills: Invalid access token
+2024-05-23T09:22:36.671Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-23T09:22:36.679Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-23T09:22:36.858Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /skills
+2024-05-23T09:22:36.859Z [error]: Error fetching LinkedIn skills: Not enough permissions to access: GET /skills
+2024-05-23T09:33:33.527Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:33.531Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:33:33.626Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:33.630Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:33:39.307Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:39.308Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:33:39.398Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:39.399Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:33:39.508Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:39.510Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:33:43.973Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:43.974Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:33:44.117Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:44.118Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:33:44.199Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:44.200Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:33:44.302Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:33:44.303Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:41:08.585Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:41:08.590Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:41:08.680Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:41:08.681Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:41:08.779Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:41:08.780Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:41:08.863Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:41:08.864Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:42:54.540Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:42:54.541Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:42:54.634Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:42:54.635Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:42:54.741Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:42:54.742Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me
+2024-05-23T09:42:54.905Z [error]: LinkedIn API error: Forbidden Not enough permissions to access: GET /me
+2024-05-23T09:42:54.907Z [error]: Error fetching LinkedIn profile: Not enough permissions to access: GET /me

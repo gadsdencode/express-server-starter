@@ -26,7 +26,7 @@ const logger = winston.createLogger({
 
   export async function getLinkedInAccessToken(code: string, redirectUri: string): Promise<string> {
     logger.info('Getting LinkedIn access token');
-    const Response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+    const response = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/x-www-form-urlencoded',
@@ -39,13 +39,14 @@ const logger = winston.createLogger({
         client_secret: process.env.NEXT_PUBLIC_LINKEDIN_CLIENT_SECRET!,
       }),
     });
-  logger.info('LinkedIn access token response', Response);
-    const data = await Response.json();
+    const data = await response.json();
     logger.info('LinkedIn access token data', data);
-    if (!Response.ok) {
+  
+    if (!response.ok) {
       logger.error('Failed to fetch LinkedIn access token', data);
       throw new Error(data.error_description || 'Failed to fetch access token');
     }
+  
     logger.info('LinkedIn access token', data.access_token);
     return data.access_token;
   }
