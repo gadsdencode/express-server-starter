@@ -1,7 +1,7 @@
 import express from 'express';
 import { config } from 'dotenv';
 import winston from 'winston';
-import { CopilotBackend, OpenAIAdapter } from "@copilotkit/backend";
+import { CopilotRuntime, OpenAIAdapter } from "@copilotkit/backend";
 import cors from 'cors';
 
 config(); // Initialize environment variables
@@ -50,8 +50,8 @@ api.get('/hello', (req, res) => {
 });
 
 api.post('/chat', (req, res) => {
-  const copilotKit = new CopilotBackend();
-  const openAIAdapter = new OpenAIAdapter();
+  const copilotKit = new CopilotRuntime();
+  const openAIAdapter = new OpenAIAdapter({ model: "gpt-4o" });
   try {
     copilotKit.streamHttpServerResponse(req, res, openAIAdapter);
   } catch (err) {
