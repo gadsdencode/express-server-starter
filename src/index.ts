@@ -4,20 +4,6 @@ import winston from 'winston';
 import { CopilotRuntime, OpenAIAdapter } from "@copilotkit/backend";
 import cors from 'cors';
 
-config(); // Initialize environment variables
-
-const app = express();
-const PORT = process.env.PORT || 3333;
-
-// Configure CORS
-app.use(cors({
-  origin: process.env.ORIGIN,
-  credentials: true,
-  methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
-  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
-}));
-
-// Configure Winston for logging
 const logger = winston.createLogger({
   level: 'info',
   format: winston.format.combine(
@@ -31,7 +17,25 @@ const logger = winston.createLogger({
   ],
 });
 
+config(); // Initialize environment variables
+logger.info('Initialized environment variables');
+
+const app = express();
+logger.info('Initialized Express');
+const PORT = process.env.PORT || 3333;
+
+// Configure CORS
+app.use(cors({
+  origin: process.env.ORIGIN,
+  credentials: true,
+  methods: ["GET", "POST", "OPTIONS", "PUT", "PATCH", "DELETE"],
+  allowedHeaders: ["Content-Type", "Authorization", "Accept"],
+}));
+logger.info(process.env.ORIGIN);
+logger.info('Configured CORS');
+
 app.use(express.json());
+logger.info('Configured Express');
 app.use(express.urlencoded({ extended: true }));
 
 app.use((req, res, next) => {
@@ -41,6 +45,7 @@ app.use((req, res, next) => {
 
 app.get('/', (req, res) => {
   res.status(200).send('Server is up and running');
+  logger.info('Sent response');
 });
 
 const api = express.Router();
@@ -50,10 +55,14 @@ api.get('/hello', (req, res) => {
 });
 
 api.post('/chat', (req, res) => {
+  logger.info('Handling chat request');
   const copilotKit = new CopilotRuntime();
+  logger.info('Initialized CopilotRuntime');
   const openAIAdapter = new OpenAIAdapter({ model: "gpt-4o" });
+  logger.info('Initialized OpenAIAdapter');
   try {
     copilotKit.streamHttpServerResponse(req, res, openAIAdapter);
+    logger.info('Streamed response');
   } catch (err) {
     console.error(err);
     res.status(500).send("Error processing request");
@@ -61,7 +70,10 @@ api.post('/chat', (req, res) => {
 });
 
 app.use('/api/v1', api);
+logger.info('Registered API routes');
 
 app.listen(PORT, () => {
   console.log(`Server listening on port ${PORT}`);
+  logger.info(`Server listening on port ${PORT}`);
 });
+

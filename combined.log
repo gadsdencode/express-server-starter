@@ -1,0 +1,7 @@
+{"level":"info","message":"Initialized environment variables","timestamp":"2024-06-04T20:01:47.878Z"}
+{"level":"info","message":"Initialized Express","timestamp":"2024-06-04T20:01:47.881Z"}
+{"level":"info","message":"http://localhost:3000","timestamp":"2024-06-04T20:01:47.882Z"}
+{"level":"info","message":"Configured CORS","timestamp":"2024-06-04T20:01:47.882Z"}
+{"level":"info","message":"Configured Express","timestamp":"2024-06-04T20:01:47.883Z"}
+{"level":"info","message":"Registered API routes","timestamp":"2024-06-04T20:01:47.884Z"}
+{"level":"info","message":"Server listening on port 3333","timestamp":"2024-06-04T20:01:47.886Z"}

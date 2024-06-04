@@ -25,12 +25,12 @@
 "@colors/colors@1.5.0":
   version "1.5.0"
 
-"@copilotkit/backend@^0.36.0":
-  version "0.36.0"
-  resolved "https://registry.npmjs.org/@copilotkit/backend/-/backend-0.36.0.tgz"
-  integrity sha512-sW3dXmHgW298Y8hMyZsUC7M/3nfsPi0ProAcJlzFB6mz5H0Tkh0P/l2t+vAO4YBCtY2HO+bWQrNxgED3Oi50zQ==
+"@copilotkit/backend@^0.37.0":
+  version "0.37.0"
+  resolved "https://registry.npmjs.org/@copilotkit/backend/-/backend-0.37.0.tgz"
+  integrity sha512-GXl3FZOFcI+Ws3b+urkcFzb9pVyPkihVIKftJmp7geFDs1eSYy39Iof8RU81rWhHZeOR5sqP0CD3jfaDRW0fnQ==
   dependencies:
-    "@copilotkit/shared" "0.36.0"
+    "@copilotkit/shared" "0.37.0"
     "@google/generative-ai" "^0.11.2"
     "@langchain/core" "^0.1.61"
     "@langchain/openai" "^0.0.28"
@@ -39,10 +39,10 @@
     openai "^4.33.1"
     zod "^3.23.3"
 
-"@copilotkit/shared@0.36.0":
-  version "0.36.0"
-  resolved "https://registry.npmjs.org/@copilotkit/shared/-/shared-0.36.0.tgz"
-  integrity sha512-3ddNc/Dhl5XbI3HjvTRBDWiz32GDZt9R1RQzuFXcQuhNjv0ZgTch1s+Ak6EJSluQPLyDRYWLnsw92Mrr5rKt4Q==
+"@copilotkit/shared@0.37.0":
+  version "0.37.0"
+  resolved "https://registry.npmjs.org/@copilotkit/shared/-/shared-0.37.0.tgz"
+  integrity sha512-ls4PqjxXH7NlK6ibO+4HUMArzv7ZZLhVdnx/JaG9K1b3Bnv0tuQzczu4s12T/AzXv/5FsmEghrBzMWrvUJbx0g==
 
 "@cspotcode/source-map-support@^0.8.0":
   version "0.8.1"
@@ -870,6 +870,8 @@ debug@^4:
 
 debug@^4.3.4, debug@4:
   version "4.3.4"
+  resolved "https://registry.npmjs.org/debug/-/debug-4.3.4.tgz"
+  integrity sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==
   dependencies:
     ms "2.1.2"
 
@@ -1099,6 +1101,8 @@ function-bind@^1.1.1:
 
 function-bind@^1.1.2:
   version "1.1.2"
+  resolved "https://registry.npmjs.org/function-bind/-/function-bind-1.1.2.tgz"
+  integrity sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==
 
 gauge@^5.0.0:
   version "5.0.1"
@@ -1135,6 +1139,8 @@ glob@^10.2.2, glob@^10.3.10:
 
 graceful-fs@^4.2.11, graceful-fs@^4.2.6:
   version "4.2.11"
+  resolved "https://registry.npmjs.org/graceful-fs/-/graceful-fs-4.2.11.tgz"
+  integrity sha512-RbJ5/jmFcNNCcDV5o9eTnBLJ/HszWV0P73bc+Ff4nS/rJj+YaS6IGyiOL0VoBYX+l1Wrl3k63h/KrH+nhJ0XvQ==
 
 has-flag@^3.0.0:
   version "3.0.0"
