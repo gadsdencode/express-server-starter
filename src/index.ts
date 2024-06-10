@@ -217,6 +217,80 @@ api.post('/calendarevents', async (req: Request, res: Response) => {
   }
 });
 
+api.post('/appointment-requests', async (req, res) => {
+  logger.info('Received request to create an appointment request');
+  try {
+    const { userId, requesterId, eventData } = req.body;
+
+    const { data, error } = await supabase
+      .from('appointment_requests')
+      .insert([{ user_id: userId, requester_id: requesterId, event_data: eventData }]);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    logger.info('Appointment request created:', data);
+    res.status(201).json(data);
+  } catch (error: any) {
+    logger.error('Error creating appointment request:', error);
+    res.status(500).json({ message: error.message || 'Failed to create appointment request' });
+  }
+});
+
+api.post('/appointment-requests/:id/respond', async (req, res) => {
+  logger.info('Received request to respond to an appointment request');
+  try {
+    const { id } = req.params;
+    const { accepted } = req.body;
+
+    const { data, error } = await supabase
+    .from('appointment_requests')
+    .update({ accepted })
+    .eq('id', id) as { data: any | null, error: Error | null };
+
+  if (error) {
+    throw new Error(error.message);
+  }
+
+  logger.info('Appointment request response updated:', data);
+
+  if (accepted && data && data.length > 0) {
+    const request = data[0];
+    await supabase
+      .from('appointments')
+      .insert([{ user_id: request.user_id, event_data: request.event_data }]);
+  }
+
+  res.status(200).json(data);
+  } catch (error: any) {
+    logger.error('Error responding to appointment request:', error);
+    res.status(500).json({ message: error.message || 'Failed to respond to appointment request' });
+  }
+});
+
+api.get('/appointments', async (req, res) => {
+  logger.info('Received request to fetch appointments');
+  try {
+    const { userId } = req.query;
+
+    const { data, error } = await supabase
+      .from('appointments')
+      .select('*')
+      .eq('user_id', userId);
+
+    if (error) {
+      throw new Error(error.message);
+    }
+
+    logger.info('Fetched appointments:', data);
+    res.status(200).json(data);
+  } catch (error: any) {
+    logger.error('Error fetching appointments:', error);
+    res.status(500).json({ message: error.message || 'Failed to fetch appointments' });
+  }
+});
+
 api.get('/userinfo', async (req: Request, res: Response) => {
   logger.info('Received request to fetch user information');
   const accessToken = req.headers.authorization?.split(' ')[1];
