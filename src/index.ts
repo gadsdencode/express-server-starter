@@ -178,6 +178,36 @@ api.get('/calendarevents', async (req: Request, res: Response) => {
   }
 });
 
+api.post('/calendarevents', async (req: Request, res: Response) => {
+  logger.info('Received request to create a calendar event');
+  try {
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    logger.info('Received access token:', accessToken);
+    if (!accessToken) {
+      throw new Error('Access token is missing');
+    }
+
+    oAuth2Client.setCredentials({ access_token: accessToken });
+    logger.info('Set access token:', accessToken);
+
+    const googleCalendarClient = createGoogleCalendarClient();
+    const event = req.body;
+    logger.info('Event data:', event);
+
+    const response = await googleCalendarClient.events.insert({
+      calendarId: 'primary',
+      requestBody: event,
+    });
+
+    logger.info('Event created:', response.data);
+    res.status(201).json(response.data);
+  } catch (error) {
+    logger.error('Error creating event:', error);
+    const message = (error as { message: string }).message || 'Failed to create event';
+    res.status(500).json({ message });
+  }
+});
+
 api.get('/userinfo', async (req: Request, res: Response) => {
   logger.info('Received request to fetch user information');
   const accessToken = req.headers.authorization?.split(' ')[1];
