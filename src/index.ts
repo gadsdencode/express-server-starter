@@ -196,7 +196,16 @@ api.post('/calendarevents', async (req: Request, res: Response) => {
 
     const response = await googleCalendarClient.events.insert({
       calendarId: 'primary',
-      requestBody: event,
+      requestBody: {
+        summary: event.summary,
+        description: event.description,
+        start: {
+          dateTime: event.start.dateTime,
+        },
+        end: {
+          dateTime: event.end.dateTime,
+        },
+      },
     });
 
     logger.info('Event created:', response.data);
