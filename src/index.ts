@@ -220,11 +220,11 @@ api.post('/calendarevents', async (req: Request, res: Response) => {
 api.post('/appointment-requests', async (req, res) => {
   logger.info('Received request to create an appointment request');
   try {
-    const { userId, requesterId, eventData } = req.body;
+    const { userEmail, requesterId, eventData } = req.body;
 
     const { data, error } = await supabase
       .from('appointment_requests')
-      .insert([{ user_id: userId, requester_id: requesterId, event_data: eventData }]);
+      .insert([{ user_id: userEmail, requester_id: requesterId, event_data: eventData }]);
 
     if (error) {
       throw new Error(error.message);
@@ -238,16 +238,16 @@ api.post('/appointment-requests', async (req, res) => {
   }
 });
 
-api.post('/appointment-requests/:id/respond', async (req, res) => {
+api.post('/appointment-requests/:email/respond', async (req, res) => {
   logger.info('Received request to respond to an appointment request');
   try {
-    const { id } = req.params;
+    const { email } = req.params;
     const { accepted } = req.body;
 
     const { data, error } = await supabase
     .from('appointment_requests')
     .update({ accepted })
-    .eq('id', id) as { data: any | null, error: Error | null };
+    .eq('email', email) as { data: any | null, error: Error | null };
 
   if (error) {
     throw new Error(error.message);
