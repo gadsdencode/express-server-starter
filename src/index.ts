@@ -16,6 +16,17 @@ import axios from 'axios';
 
 import { getLinkedInData, getLinkedInAccessToken } from './server/linkedin';
 
+interface UpdateData {
+  status: string;
+  proposed_time?: string; // Make proposed_time optional since it's conditionally added
+  proposed_date?: string;
+  requester_id?: string;
+  user_id?: string;
+  event_data?: string;
+  accepted?: boolean;
+  declined?: boolean;
+}
+
 interface RoomResponse {
   url: string;
   error?: { message: string };
@@ -242,12 +253,25 @@ api.post('/appointment-requests/:email/respond', async (req, res) => {
   logger.info('Received request to respond to an appointment request');
   try {
     const { email } = req.params;
-    const { accepted } = req.body;
+    const { action, proposedTime, proposedDate } = req.body;
+
+    if (!action) {
+      throw new Error('Action is missing');
+    }
+
+    let updateData: UpdateData = { status: action };
+
+    if (action === 'propose') {
+      if (!proposedTime) {
+        throw new Error('Proposed time is missing');
+      }
+      updateData = { ...updateData, proposed_time: proposedTime, proposed_date: proposedDate };
+    }
 
     const { data, error } = await supabase
     .from('appointment_requests')
-    .update({ accepted })
-    .eq('email', email) as { data: any | null, error: Error | null };
+    .update({ updateData })
+    .eq('user_id', email) as { data: any | null, error: Error | null };
 
   if (error) {
     throw new Error(error.message);
@@ -255,14 +279,21 @@ api.post('/appointment-requests/:email/respond', async (req, res) => {
 
   logger.info('Appointment request response updated:', data);
 
-  if (accepted && data && data.length > 0) {
-    const request = data[0];
-    await supabase
-      .from('appointments')
-      .insert([{ user_id: request.user_id, event_data: request.event_data }]);
-  }
+  if (action === 'accept' && data && data.length > 0) {
+      const request = data[0];
+      await supabase
+        .from('appointments')
+        .insert([{ user_id: request.user_email, event_data: request.event_data }]);
+    }
 
-  res.status(200).json(data);
+    if (action === 'decline' && data && data.length > 0) {
+      const request = data[0];
+      await supabase
+        .from('appointments')
+        .insert([{ user_id: request.user_email, event_data: request.event_data }]);
+    }
+
+    res.status(200).json(data);
   } catch (error: any) {
     logger.error('Error responding to appointment request:', error);
     res.status(500).json({ message: error.message || 'Failed to respond to appointment request' });
@@ -272,12 +303,12 @@ api.post('/appointment-requests/:email/respond', async (req, res) => {
 api.get('/appointments', async (req, res) => {
   logger.info('Received request to fetch appointments');
   try {
-    const { userId } = req.query;
+    const { userEmail } = req.query;
 
     const { data, error } = await supabase
       .from('appointments')
       .select('*')
-      .eq('user_id', userId);
+      .eq('user_id', userEmail);
 
     if (error) {
       throw new Error(error.message);
