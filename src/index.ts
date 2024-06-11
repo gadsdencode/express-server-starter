@@ -302,6 +302,7 @@ api.get('/userinfo', async (req: Request, res: Response) => {
 
   try {
     const userInfo = await fetchUserInfo(accessToken);
+    console.log('User info retrieved in /userinfo endpoint:', userInfo);
     logger.info('Fetched user information:', userInfo);
     res.json(userInfo);
   } catch (error: any) {
@@ -320,6 +321,7 @@ api.get('/user/profile', async (req: Request, res: Response) => {
   try {
       const userInfo = await fetchUserInfo(accessToken);
       logger.info('Fetched user profile:', userInfo);
+      console.log('User info retrieved in /user/profile endpoint:', userInfo);
       res.json({
           name: userInfo.user.name,
           email: userInfo.user.email,
@@ -549,19 +551,34 @@ app.post('/api/v1/create-room', async (req, res) => {
 
 // Google API User Info
 async function fetchUserInfo(accessToken: string) {
-  const response = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
-    headers: { Authorization: `Bearer ${accessToken}` }
-  });
-  if (!response.data) throw new Error('Failed to fetch user details');
-  return {
-    access_token: accessToken,
-    refresh_token: null, // Refresh token should be handled securely server-side if used
-    user: {
-      name: response.data.name,
-      email: response.data.email,
-      picture: response.data.picture
+  try {
+    const response = await axios.get('https://www.googleapis.com/oauth2/v1/userinfo', {
+      headers: { Authorization: `Bearer ${accessToken}` }
+    });
+
+    if (!response.data) {
+      throw new Error('Failed to fetch user details');
     }
-  };
+
+    const userData = {
+      access_token: accessToken,
+      refresh_token: null,
+      user: {
+        name: response.data.name,
+        email: response.data.email,
+        picture: response.data.picture
+      }
+    };
+
+    console.log('User data retrieved:', userData);
+    logger.info('User data retrieved:', userData);
+
+    return userData;
+  } catch (error: any) {
+    console.error('Error fetching user info:', error);
+    logger.error('Error fetching user info:', error);
+    throw error;
+  }
 }
 
 
