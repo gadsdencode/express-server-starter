@@ -491,7 +491,7 @@ api.get('/fetch-coaches', async (req, res) => {
 });
 
 // User-Coach Selection
-api.post('/create-coach-selection', async (req, res) => {
+app.post('/create-coach-selection', async (req, res) => {
   const { userId, coachUserId } = req.body;
 
   try {
