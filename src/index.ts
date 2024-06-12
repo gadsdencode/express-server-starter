@@ -491,32 +491,33 @@ api.get('/fetch-coaches', async (req, res) => {
 });
 
 // User-Coach Selection
-app.post('/create-coach-selection', async (req, res) => {
-  const { userId, coachUserId } = req.body;
+api.post('/create-coach-selection', async (req, res) => {
+  const { userId, coachId } = req.body;
 
   try {
-    // Validate that the coachUserId is a coach in the profiles table
+    // Validate that the coachId is a coach in the profiles table
     const { data: coachData, error: coachError } = await supabase
       .from('profiles')
       .select('id')
-      .eq('id', coachUserId)
-      .eq('role', 'coach');
+      .eq('id', coachId)
+      .eq('role', 'coach')
+      .single();
 
-    if (coachError) throw new Error(`Coach validation failed: ${coachError.message}`);
-    if (coachData.length === 0) throw new Error('Coach not found.');
+    if (coachError) throw coachError;
+    if (!coachData) throw new Error('Coach not found.');
 
     // Update the user's profile with the selected coach ID
     const { error: updateError } = await supabase
       .from('profiles')
-      .update({ coach_selection: coachUserId })
+      .update({ coach_selection: coachId })
       .eq('id', userId);
 
-    if (updateError) throw new Error(`Failed to create coach-user relationship: ${updateError.message}`);
+    if (updateError) throw updateError;
 
     res.json({ success: true });
-  } catch (error: any) {
-    const message = error.message || 'Error creating coach selection.';
-    res.status(500).json({ message });
+  } catch (error) {
+    console.error('Error creating coach selection:', error);
+    res.status(500).json({ error: 'Failed to create coach selection.' });
   }
 });
 
