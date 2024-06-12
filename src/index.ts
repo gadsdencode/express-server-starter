@@ -520,7 +520,7 @@ app.post('/create-coach-selection', async (req, res) => {
   }
 });
 
-app.post('/fetch-coach-bio-and-image', async (req, res) => {
+api.post('/fetch-coach-bio-and-image', async (req, res) => {
   logger.info('Received request to fetch coach bio and image');
   const { coachUserId } = req.body;
 
