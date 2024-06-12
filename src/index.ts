@@ -476,7 +476,7 @@ api.get('/fetch-coaches', async (req, res) => {
   try {
     const { data, error } = await supabase
       .from('profiles')
-      .select('id, name')
+      .select('*')
       .eq('role', 'coach');
     logger.info('Fetched coaches:', data);
     if (error) throw new Error(`Failed to fetch coaches: ${error.message}`);
@@ -486,28 +486,6 @@ api.get('/fetch-coaches', async (req, res) => {
   } catch (error) {
     const message = (error as { message: string }).message || 'Error fetching coaches.';
     logger.error('Error fetching coaches:', error);
-    res.status(500).json({ message });
-  }
-});
-
-api.post('/fetch-coach-bio-and-image', async (req, res) => {
-  logger.info('Received request to fetch coach bio and image');
-  const { coachId } = req.body;
-  try {
-    const { data, error } = await supabase
-      .from('coachbio')
-      .select('*')
-      .eq('userId', coachId);
-    logger.info('Fetched coach bio and image:', data);
-    if (error) throw new Error(`Failed to fetch coach bio: ${error.message}`);
-    if (data.length === 0) {
-      return res.status(404).json({ message: 'Coach bio not found' });
-    }
-    res.json(data[0]);
-    logger.info('Returned coach bio and image:', data[0]);
-  } catch (error) {
-    const message = (error as { message: string }).message || 'An unexpected error occurred.';
-    logger.error('Error fetching coach bio and image:', error);
     res.status(500).json({ message });
   }
 });
