@@ -512,6 +512,60 @@ api.post('/fetch-coach-bio-and-image', async (req, res) => {
   }
 });
 
+// User-Coach Selection
+app.post('/create-coach-selection', async (req, res) => {
+  const { userId, coachUserId } = req.body;
+
+  try {
+    // Validate that the coachUserId is a coach in the profiles table
+    const { data: coachData, error: coachError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', coachUserId)
+      .eq('role', 'coach');
+
+    if (coachError) throw new Error(`Coach validation failed: ${coachError.message}`);
+    if (coachData.length === 0) throw new Error('Coach not found.');
+
+    // Update the user's profile with the selected coach ID
+    const { error: updateError } = await supabase
+      .from('profiles')
+      .update({ coach_selection: coachUserId })
+      .eq('id', userId);
+
+    if (updateError) throw new Error(`Failed to create coach-user relationship: ${updateError.message}`);
+
+    res.json({ success: true });
+  } catch (error: any) {
+    const message = error.message || 'Error creating coach selection.';
+    res.status(500).json({ message });
+  }
+});
+
+app.post('/fetch-coach-bio-and-image', async (req, res) => {
+  logger.info('Received request to fetch coach bio and image');
+  const { coachUserId } = req.body;
+
+  try {
+    const { data, error } = await supabase
+      .from('coach_signups')
+      .select('*')
+      .eq('id', coachUserId);
+
+    logger.info('Fetched coach bio and image:', data);
+    if (error) throw new Error(`Failed to fetch coach bio: ${error.message}`);
+    if (data.length === 0) {
+      return res.status(404).json({ message: 'Coach bio not found' });
+    }
+    res.json(data[0]);
+    logger.info('Returned coach bio and image:', data[0]);
+  } catch (error: any) {
+    const message = error.message || 'An unexpected error occurred.';
+    logger.error('Error fetching coach bio and image:', error);
+    res.status(500).json({ message });
+  }
+});
+
 app.get('/api/v1/verify-room', async (req, res) => {
   const roomUrl = req.query.roomUrl; // Get room URL from query parameters
   if (!roomUrl || typeof roomUrl !== 'string') {
