@@ -478,14 +478,14 @@ api.get('/fetch-coaches', async (req, res) => {
       .from('profiles')
       .select('*')
       .eq('role', 'coach');
-    logger.info('Fetched coaches:', data);
+      
     if (error) throw new Error(`Failed to fetch coaches: ${error.message}`);
     
+    logger.info('Fetched coaches:', data);
     res.json(data);
-    logger.info('Returned coaches:', data);
   } catch (error) {
     const message = (error as { message: string }).message || 'Error fetching coaches.';
-    logger.error('Error fetching coaches:', error);
+    logger.error('Error fetching coaches:', message);
     res.status(500).json({ message });
   }
 });
@@ -493,6 +493,10 @@ api.get('/fetch-coaches', async (req, res) => {
 // User-Coach Selection
 api.post('/create-coach-selection', async (req, res) => {
   const { userId, coachId } = req.body;
+
+  if (!userId || !coachId) {
+    return res.status(400).json({ error: 'User ID and Coach ID are required.' });
+  }
 
   try {
     // Validate that the coachId is a coach in the profiles table
