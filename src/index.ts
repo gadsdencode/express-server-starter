@@ -578,7 +578,9 @@ app.get('/api/v1/verify-room', async (req, res) => {
 
 // API Endpoint to create and synchronize room URL
 app.post('/api/v1/create-room', async (req, res) => {
+  logger.info('Received request to create room');
   const profileId = req.body.profileId;
+  logger.info('Received profile ID:', profileId);
 
   try {
     const { data: profile, error } = await supabase
@@ -587,7 +589,12 @@ app.post('/api/v1/create-room', async (req, res) => {
       .eq('id', profileId)
       .single();
 
+    logger.info('Profile:', profile);
+    logger.info('Error:', error);
+
     if (error || !profile) throw new Error(`Profile not found: ${error?.message}`);
+    logger.info('Fetched profile:', profile);
+    logger.info('Coach selection:', profile.coach_selection);
 
     // Create room
     const roomResponse = await fetch('https://api.daily.co/v1/rooms', {
@@ -599,18 +606,34 @@ app.post('/api/v1/create-room', async (req, res) => {
       body: JSON.stringify({ properties: { exp: Math.floor(Date.now() / 1000) + 7200 } }) // 2 hours expiration
     });
 
+    logger.info('Room creation response:', roomResponse);
+    logger.info('Room creation response status:', roomResponse.status);
+
     const roomData = (await roomResponse.json()) as RoomResponse;
+    logger.info('Room creation response:', roomData);
     if (!roomResponse.ok) throw new Error(`Failed to create room: ${roomData.error?.message}`);
+    logger.info('Room creation successful:', roomData.url);
+    logger.info('Room creation failed:', roomData.error);
 
     // Update profiles with new room URL
+    logger.info('Updating profiles with new room URL');
+    logger.info('Profile ID:', profileId);
+    logger.info('Coach selection:', profile.coach_selection);
+    logger.info('Room URL:', roomData.url);
+
     const updateResponse = await supabase
       .from('profiles')
       .update({ room_url: roomData.url })
       .in('id', [profileId, profile.coach_selection]);
 
+    logger.info('Update response:', updateResponse);
+
     if (updateResponse.error) throw new Error(`Failed to update profiles: ${updateResponse.error.message}`);
+    logger.info('Profiles updated successfully');
+    logger.info('Profiles update failed:', updateResponse.error);
 
     res.status(200).json({ room_url: roomData.url });
+    logger.info('Room creation successful:', roomData.url);
   } catch (error: any) {
     logger.error('Room creation failed:', error.message);
     res.status(500).json({ error: error.message });
