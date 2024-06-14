@@ -28,7 +28,7 @@ interface UpdateData {
 }
 
 interface RoomResponse {
-  url: string;
+  url?: string;
   error?: { message: string };
 }
 
@@ -577,21 +577,19 @@ app.get('/api/v1/verify-room', async (req, res) => {
 
 
 // API Endpoint to create and synchronize room URL
-app.post('/api/v1/create-room', async (req, res) => {
+api.post('/create-room', async (req: Request, res: Response) => {
   const profileId = req.body.profileId;
   logger.info('Received profile ID:', profileId);
 
   try {
-    const { data: profile, error } = await supabase
+    const { data: profile, error: profileError } = await supabase
       .from('profiles')
       .select('coach_selection')
       .eq('id', profileId)
       .single();
 
     logger.info('Profile:', profile);
-    logger.info('Error:', error);
-
-    if (error || !profile) throw new Error(`Profile not found: ${error?.message}`);
+    if (profileError || !profile) throw new Error(`Profile not found: ${profileError?.message}`);
 
     if (!profile.coach_selection) {
       throw new Error('Coach selection is null for the logged-in user');
@@ -604,11 +602,7 @@ app.post('/api/v1/create-room', async (req, res) => {
       .single();
 
     logger.info('Coach profile:', coachProfile);
-    logger.info('Coach error:', coachError);
-
-    if (coachError || !coachProfile) {
-      throw new Error(`Coach profile not found: ${coachError?.message}`);
-    }
+    if (coachError || !coachProfile) throw new Error(`Coach profile not found: ${coachError?.message}`);
 
     const coachProfileId = coachProfile.id;
     logger.info('Coach profile ID:', coachProfileId);
@@ -623,21 +617,13 @@ app.post('/api/v1/create-room', async (req, res) => {
       body: JSON.stringify({ properties: { exp: Math.floor(Date.now() / 1000) + 7200 } }) // 2 hours expiration
     });
 
-    logger.info('Room creation response:', roomResponse);
-    logger.info('Room creation response status:', roomResponse.status);
-
-    const roomData = (await roomResponse.json()) as RoomResponse;
+    const roomData: RoomResponse = await roomResponse.json();
     logger.info('Room creation response:', roomData);
     if (!roomResponse.ok) throw new Error(`Failed to create room: ${roomData.error?.message}`);
+
     logger.info('Room creation successful:', roomData.url);
-    logger.info('Room creation failed:', roomData.error);
 
     // Update profiles with new room URL
-    logger.info('Updating profiles with new room URL');
-    logger.info('Profile ID:', profileId);
-    logger.info('Coach selection:', profile.coach_selection);
-    logger.info('Room URL:', roomData.url);
-
     const updateResponse = await supabase
       .from('profiles')
       .update({ room_url: roomData.url })
@@ -647,10 +633,8 @@ app.post('/api/v1/create-room', async (req, res) => {
 
     if (updateResponse.error) throw new Error(`Failed to update profiles: ${updateResponse.error.message}`);
     logger.info('Profiles updated successfully');
-    logger.info('Profiles update failed:', updateResponse.error);
 
     res.status(200).json({ room_url: roomData.url });
-    logger.info('Room creation successful:', roomData.url);
   } catch (error: any) {
     logger.error('Room creation failed:', error.message);
     res.status(500).json({ error: error.message });
