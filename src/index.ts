@@ -578,9 +578,7 @@ app.get('/api/v1/verify-room', async (req, res) => {
 
 // API Endpoint to create and synchronize room URL
 app.post('/api/v1/create-room', async (req, res) => {
-  logger.info('Received request to create room');
   const profileId = req.body.profileId;
-  const coachProfileId = req.body.coachProfileId;
   logger.info('Received profile ID:', profileId);
 
   try {
@@ -594,8 +592,26 @@ app.post('/api/v1/create-room', async (req, res) => {
     logger.info('Error:', error);
 
     if (error || !profile) throw new Error(`Profile not found: ${error?.message}`);
-    logger.info('Fetched profile:', profile);
-    logger.info('Coach selection:', profile.coach_selection);
+
+    if (!profile.coach_selection) {
+      throw new Error('Coach selection is null for the logged-in user');
+    }
+
+    const { data: coachProfile, error: coachError } = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('id', profile.coach_selection)
+      .single();
+
+    logger.info('Coach profile:', coachProfile);
+    logger.info('Coach error:', coachError);
+
+    if (coachError || !coachProfile) {
+      throw new Error(`Coach profile not found: ${coachError?.message}`);
+    }
+
+    const coachProfileId = coachProfile.id;
+    logger.info('Coach profile ID:', coachProfileId);
 
     // Create room
     const roomResponse = await fetch('https://api.daily.co/v1/rooms', {
