@@ -580,6 +580,7 @@ app.get('/api/v1/verify-room', async (req, res) => {
 app.post('/api/v1/create-room', async (req, res) => {
   logger.info('Received request to create room');
   const profileId = req.body.profileId;
+  const coachProfileId = req.body.coachProfileId;
   logger.info('Received profile ID:', profileId);
 
   try {
@@ -624,7 +625,7 @@ app.post('/api/v1/create-room', async (req, res) => {
     const updateResponse = await supabase
       .from('profiles')
       .update({ room_url: roomData.url })
-      .in('id', [profileId, profile.coach_selection]);
+      .in('id', [profileId, coachProfileId]);
 
     logger.info('Update response:', updateResponse);
 
