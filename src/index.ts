@@ -583,7 +583,7 @@ app.post('/api/v1/create-room', async (req, res) => {
   try {
     const { data: profile, error } = await supabase
       .from('profiles')
-      .select('related_user_id')
+      .select('coach_selection')
       .eq('id', profileId)
       .single();
 
@@ -606,7 +606,7 @@ app.post('/api/v1/create-room', async (req, res) => {
     const updateResponse = await supabase
       .from('profiles')
       .update({ room_url: roomData.url })
-      .in('id', [profileId, profile.related_user_id]);
+      .in('id', [profileId, profile.coach_selection]);
 
     if (updateResponse.error) throw new Error(`Failed to update profiles: ${updateResponse.error.message}`);
 
