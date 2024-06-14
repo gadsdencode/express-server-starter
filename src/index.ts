@@ -560,7 +560,7 @@ app.get('/api/v1/verify-room', async (req, res) => {
 
   try {
     const verifyResponse = await fetch(verifyUrl, {
-      headers: { 'Authorization': `Bearer ${process.env.DAILY_API_KEY}` }
+      headers: { 'Authorization': `Bearer ${process.env.NEXT_PUBLIC_DAILY_API_KEY}` }
     });
 
     const roomData = await verifyResponse.json();
@@ -593,7 +593,7 @@ app.post('/api/v1/create-room', async (req, res) => {
     const roomResponse = await fetch('https://api.daily.co/v1/rooms', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${process.env.DAILY_API_KEY}`,
+        'Authorization': `Bearer ${process.env.NEXT_PUBLIC_DAILY_API_KEY}`,
         'Content-Type': 'application/json'
       },
       body: JSON.stringify({ properties: { exp: Math.floor(Date.now() / 1000) + 7200 } }) // 2 hours expiration
