@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 // import { Server as WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
 //import { createClient, SupabaseClient } from '@supabase/supabase-js';
-// import { body, validationResult } from 'express-validator';
+import { body, validationResult } from 'express-validator';
 // import crypto from 'crypto';
 import winston from 'winston';
 // import fetch from 'node-fetch';
@@ -672,6 +672,84 @@ async function fetchUserInfo(accessToken: string) {
     throw error;
   }
 }
+
+// Instant Message APIs
+
+api.post('/create-chat-with-user', [
+  body('userId').not().isEmpty().withMessage('User ID is required'),
+  body('otherUserId').not().isEmpty().withMessage('Other User ID is required'),
+], async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { userId, otherUserId } = req.body;
+
+  try {
+    const newChatId = crypto.randomUUID();
+    const { error: chatCreateError } = await supabase.from('chats').insert([{ id: newChatId }]);
+
+    if (chatCreateError) throw chatCreateError;
+
+    const users = [userId, otherUserId];
+    const chatUsersInsertError = await Promise.all(
+      users.map(user =>
+        supabase.from('chats_users').insert({ chat_id: newChatId, user_id: user })
+      )
+    );
+
+    if (chatUsersInsertError.some(result => result.error)) throw new Error('Failed to link chat with users');
+
+    res.json({ newChatId });
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
+
+api.post('/create-chat', async (req: Request, res: Response) => {
+  try {
+    const newChatId = crypto.randomUUID();
+    const { error } = await supabase.from('chats').insert([{ id: newChatId }]);
+
+    if (error) throw new Error('Failed to create chat');
+
+    res.json({ newChatId });
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
+
+api.post('/link-users-to-chat', [
+  body('chatId').not().isEmpty().withMessage('Chat ID is required'),
+  body('userIds').isArray().withMessage('User IDs must be an array'),
+], async (req: Request, res: Response) => {
+  const errors = validationResult(req);
+
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ errors: errors.array() });
+  }
+
+  const { chatId, userIds } = req.body;
+
+  try {
+    const chatUsersInsertError = await Promise.all(
+      userIds.map(userId =>
+        supabase.from('chats_users').insert({ chat_id: chatId, user_id: userId })
+      )
+    );
+
+    if (chatUsersInsertError.some(result => result.error)) throw new Error('Failed to link chat with users');
+
+    res.json({ success: true });
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
 
 
 api.get('/hello', (req, res) => {
