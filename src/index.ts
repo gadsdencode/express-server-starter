@@ -1,13 +1,12 @@
 import express, { Request, Response } from 'express';
 import http from 'http';
 import cookieParser from 'cookie-parser';
-// import { Server as WebSocketServer, WebSocket } from 'ws';
+import { Server as WebSocketServer, WebSocket } from 'ws';
 import cors from 'cors';
-//import { createClient, SupabaseClient } from '@supabase/supabase-js';
 import { body, validationResult } from 'express-validator';
-// import crypto from 'crypto';
+import crypto from 'crypto';
 import winston from 'winston';
-// import fetch from 'node-fetch';
+import fetch from 'node-fetch';
 import { OAuth2Client } from 'google-auth-library';
 import { createClient, SupabaseClient  } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
@@ -30,6 +29,22 @@ interface UpdateData {
 interface RoomResponse {
   url?: string;
   error?: { message: string };
+}
+
+interface WebSocketMessage {
+  type: string;
+  messageId?: string;
+  senderId?: string;
+  reaction?: string;
+  text?: string;
+  chat_id?: string;
+  userId?: string;
+  userName?: string;
+  userAvatar?: string;
+  createdAt?: string;
+  updatedAt?: string;
+  author_id?: string;
+  content: string;
 }
 
 dotenv.config();
@@ -124,6 +139,125 @@ if (!supabaseUrl || !supabaseKey) {
   process.exit(1);
 }
 */
+
+const wss = new WebSocketServer({ server, path: '/api/v1/ws' });
+
+wss.on('connection', (ws: WebSocket) => {
+  logger.info('WebSocket connection established');
+
+  ws.on('error', (error: Error) => {
+    logger.error('WebSocket error:', error);
+  });
+
+  ws.on('message', async (rawData: string) => {
+    try {
+      const message: WebSocketMessage = JSON.parse(rawData);
+      await handleWebSocketMessage(message, ws);
+    } catch (error) {
+      logger.error('Error parsing WebSocket message:', error);
+      ws.send(JSON.stringify({ error: 'Invalid message format' }));
+    }
+  });
+});
+
+async function handleWebSocketMessage(message: WebSocketMessage, ws: WebSocket) {
+  if (message.type === 'reaction') {
+    await handleReaction(message, ws);
+  } else if (message.type === 'typing_started' || message.type === 'typing_stopped') {
+    await handleTypingEvent(message, ws);
+  } else {
+    await handleMessage(message, ws);
+  }
+}
+
+async function handleTypingEvent(message: WebSocketMessage, ws: WebSocket) {
+  const { type, senderId, chat_id } = message;
+  logger.info(`Received typing event from ${senderId} in chat ${chat_id}: ${type}`);
+
+  if (!senderId || !chat_id) {
+    ws.send(JSON.stringify({ error: 'Sender ID and Chat ID are required for typing events' }));
+    return;
+  }
+
+  let recipients = 0;
+  wss.clients.forEach(client => {
+    if (client !== ws && client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type, senderId, chat_id }));
+      recipients++;
+    }
+  });
+  logger.info(`Typing event ${type} from ${senderId} was sent to ${recipients} other clients.`);
+}
+
+async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
+  const { messageId, reaction, senderId } = message;
+
+  if (!messageId) {
+    ws.send(JSON.stringify({ error: 'Message ID is required for reactions' }));
+    return;
+  }
+
+  const { data: messageData, error: messageError } = await supabase
+    .from('messages')
+    .select('*')
+    .eq('id', messageId)
+    .single();
+
+  if (messageError || !messageData) {
+    logger.error('Failed to fetch message for reaction:', messageError?.message);
+    ws.send(JSON.stringify({ error: 'Failed to fetch message' }));
+    return;
+  }
+
+  let updatedReactions = messageData.reactions || [];
+  const reactionIndex = updatedReactions.findIndex(r => r.emoji === reaction && r.userId === senderId);
+
+  if (reactionIndex !== -1) {
+    updatedReactions[reactionIndex].count += 1;
+  } else {
+    updatedReactions.push({ emoji: reaction, userId: senderId, count: 1 });
+  }
+
+  const { error: updateError } = await supabase
+    .from('messages')
+    .update({ reactions: updatedReactions })
+    .eq('id', messageId);
+
+  if (updateError) {
+    logger.error('Failed to update reactions:', updateError.message);
+    ws.send(JSON.stringify({ error: 'Failed to update reactions' }));
+    return;
+  }
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'reactionUpdate', messageId: messageId, reactions: updatedReactions }));
+    }
+  });
+}
+
+async function handleMessage(message: WebSocketMessage, ws: WebSocket) {
+  const { error } = await supabase
+    .from('messages')
+    .insert([{
+      chat_id: message.chat_id,
+      author_id: message.author_id,
+      content: message.content,
+      status: 'sent',
+    }]);
+
+  if (error) {
+    logger.error('Failed to insert message:', error.message);
+    ws.send(JSON.stringify({ error: 'Failed to process message' }));
+    return;
+  }
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(message));
+    }
+  });
+}
 
 const api = express.Router();
 
