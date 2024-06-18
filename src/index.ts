@@ -801,6 +801,117 @@ api.get('/fetch-user-by-name', async (req: Request, res: Response) => {
   }
 });
 
+api.get('/search-users-filtered', async (req, res) => {
+  const { userId, query } = req.query;
+
+  if (!userId) return res.status(400).json({ message: 'User ID is required' });
+  if (!query) return res.status(400).json({ message: 'Search query is required' });
+
+  try {
+    const userCoachRelationships = await supabase
+      .from('user_coach_relationships')
+      .select('coach_id')
+      .eq('user_id', userId);
+
+    if (userCoachRelationships.error) throw userCoachRelationships.error;
+    if (userCoachRelationships.data.length === 0) return res.status(404).json({ message: 'No coaches found for this user.' });
+
+    const coachIds = userCoachRelationships.data.map(relationship => relationship.coach_id);
+    const profiles = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', coachIds)
+      .ilike('name', `%${query}%`);
+
+    if (profiles.error) throw profiles.error;
+    res.status(200).json(profiles.data);
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error', details: (err as Error).message });
+  }
+});
+
+api.get('/search-users-filtered2', async (req, res) => {
+  const { userId, query } = req.query;
+
+  if (!userId) return res.status(400).json({ message: 'User ID is required' });
+  if (!query) return res.status(400).json({ message: 'Search query is required' });
+
+  try {
+    const userCoachRelationships = await supabase
+      .from('user_coach_relationships')
+      .select('user_id')
+      .eq('coach_id', userId);
+
+    if (userCoachRelationships.error) throw userCoachRelationships.error;
+    if (userCoachRelationships.data.length === 0) return res.status(404).json({ message: 'No coaches found for this user.' });
+
+    const userIds = userCoachRelationships.data.map(relationship => relationship.user_id);
+    const profiles = await supabase
+      .from('profiles')
+      .select('*')
+      .in('id', userIds)
+      .ilike('name', `%${query}%`);
+
+    if (profiles.error) throw profiles.error;
+    res.status(200).json(profiles.data);
+  } catch (err) {
+    res.status(500).json({ message: 'Internal server error', details: (err as Error).message });
+  }
+});
+
+
+api.get('/search-suggestions', async (req: Request, res: Response) => {
+  const { query } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ message: 'Search query is required' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('name')
+      .ilike('name', `%${query}%`)
+      .limit(5);
+
+    if (error) throw error;
+
+    const suggestions = data.map((profile) => profile.name);
+    res.json(suggestions);
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
+
+api.get('/search-users', async (req: Request, res: Response) => {
+  const { query, page = 1, limit = 10, sort = 'name', order = 'asc' } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ message: 'Search query is required' });
+  }
+
+  try {
+    const offset = (Number(page) - 1) * Number(limit);
+    const { data, error, count } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, phone, role, company', { count: 'exact' })
+      .ilike('full_name', `%${query}%`)
+      .order(sort as string, { ascending: order === 'asc' })
+      .range(offset, offset + Number(limit) - 1);
+
+    if (error) throw error;
+
+    res.json({
+      profiles: data,
+      hasMore: offset + Number(limit) < count,
+    });
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
+
 
 api.get('/hello', (req, res) => {
   logger.info('Hello world endpoint called');
