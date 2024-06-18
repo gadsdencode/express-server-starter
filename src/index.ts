@@ -1046,6 +1046,36 @@ api.get('/search-users', async (req: Request, res: Response) => {
   }
 });
 
+api.get('/search-users-coach', async (req: Request, res: Response) => {
+  const { query, page = 1, limit = 10, sort = 'name', order = 'asc' } = req.query;
+
+  if (!query) {
+    return res.status(400).json({ message: 'Search query is required' });
+  }
+
+  try {
+    const offset = (Number(page) - 1) * Number(limit);
+    const { data, error, count } = await supabase
+      .from('profiles')
+      .select('id, full_name, name, email, phone, role, company, coach_selection', { count: 'exact' })
+      .ilike('full_name', `%${query}%`)
+      .ilike('name', `%${query}%`)
+      .is('role', null)
+      .order(sort as string, { ascending: order === 'asc' })
+      .range(offset, offset + Number(limit) - 1);
+
+    if (error) throw error;
+
+    res.json({
+      profiles: data,
+      hasMore: offset + Number(limit) < count,
+    });
+  } catch (error) {
+    const message = (error as { message: string }).message || 'An unexpected error occurred';
+    res.status(500).json({ message });
+  }
+});
+
 
 api.get('/hello', (req, res) => {
   logger.info('Hello world endpoint called');
