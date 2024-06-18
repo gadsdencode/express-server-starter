@@ -776,6 +776,30 @@ api.get('/fetch-chat-history/:chatId', async (req: Request, res: Response) => {
   }
 });
 
+api.get('/fetch-user-by-name', async (req: Request, res: Response) => {
+  const { username } = req.query;
+
+  if (!username) {
+    return res.status(400).json({ message: 'Username is required.' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('name', username)
+      .single();
+
+    if (error || !data) {
+      return res.status(404).json({ message: 'User not found.' });
+    }
+
+    res.json(data);
+  } catch (error) {
+    const errorMessage = (error as Error).message;
+    res.status(500).json({ message: 'An unexpected error occurred.', error: errorMessage });
+  }
+});
 
 
 api.get('/hello', (req, res) => {
