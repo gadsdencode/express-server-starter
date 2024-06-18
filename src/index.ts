@@ -777,6 +777,7 @@ api.get('/fetch-chat-history/:chatId', async (req: Request, res: Response) => {
 });
 
 
+
 api.get('/hello', (req, res) => {
   logger.info('Hello world endpoint called');
   res.status(200).send({ message: 'hello world' });
