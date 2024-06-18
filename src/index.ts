@@ -808,19 +808,19 @@ api.get('/search-users-filtered', async (req, res) => {
   if (!query) return res.status(400).json({ message: 'Search query is required' });
 
   try {
-    const userCoachRelationships = await supabase
-      .from('user_coach_relationships')
-      .select('coach_id')
-      .eq('user_id', userId);
+    const userProfile = await supabase
+      .from('profiles')
+      .select('coach_selection')
+      .eq('id', userId)
+      .single();
 
-    if (userCoachRelationships.error) throw userCoachRelationships.error;
-    if (userCoachRelationships.data.length === 0) return res.status(404).json({ message: 'No coaches found for this user.' });
+    if (userProfile.error) throw userProfile.error;
+    if (!userProfile.data.coach_selection) return res.status(404).json({ message: 'No coach selected for this user.' });
 
-    const coachIds = userCoachRelationships.data.map(relationship => relationship.coach_id);
     const profiles = await supabase
       .from('profiles')
       .select('*')
-      .in('id', coachIds)
+      .eq('id', userProfile.data.coach_selection)
       .ilike('name', `%${query}%`);
 
     if (profiles.error) throw profiles.error;
@@ -837,15 +837,15 @@ api.get('/search-users-filtered2', async (req, res) => {
   if (!query) return res.status(400).json({ message: 'Search query is required' });
 
   try {
-    const userCoachRelationships = await supabase
-      .from('user_coach_relationships')
-      .select('user_id')
-      .eq('coach_id', userId);
+    const coachProfile = await supabase
+      .from('profiles')
+      .select('id')
+      .eq('coach_selection', userId);
 
-    if (userCoachRelationships.error) throw userCoachRelationships.error;
-    if (userCoachRelationships.data.length === 0) return res.status(404).json({ message: 'No coaches found for this user.' });
+    if (coachProfile.error) throw coachProfile.error;
+    if (coachProfile.data.length === 0) return res.status(404).json({ message: 'No users found for this coach.' });
 
-    const userIds = userCoachRelationships.data.map(relationship => relationship.user_id);
+    const userIds = coachProfile.data.map(profile => profile.id);
     const profiles = await supabase
       .from('profiles')
       .select('*')
@@ -858,7 +858,6 @@ api.get('/search-users-filtered2', async (req, res) => {
     res.status(500).json({ message: 'Internal server error', details: (err as Error).message });
   }
 });
-
 
 api.get('/search-suggestions', async (req: Request, res: Response) => {
   const { query } = req.query;
