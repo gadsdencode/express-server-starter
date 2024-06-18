@@ -775,6 +775,37 @@ api.post('/create-room', async (req: Request, res: Response) => {
   }
 });
 
+const supabaseAdminClient = createClient(
+  process.env.SUPABASE_URL,
+  process.env.SUPABASE_SERVICE_KEY
+);
+
+api.post('/update-profile', async (req, res) => {
+  logger.info('Received request to update profile');
+  const { user_uuid, user_name, user_email, user_picture, user_locale } = req.body;
+
+  try {
+    const { error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
+      user_uuid,
+      user_name,
+      user_email,
+      user_picture,
+      user_locale,
+    });
+
+    if (error) {
+      throw new Error(`Failed to update profile: ${error.message}`);
+    }
+
+    res.status(200).json({ message: 'Profile updated successfully' });
+    logger.info('Profile updated successfully for user:', user_uuid);
+  } catch (error: any) {
+    const message = error.message || 'An unexpected error occurred.';
+    logger.error('Error updating profile:', error);
+    res.status(500).json({ message });
+  }
+});
+
 // Google API User Info
 async function fetchUserInfo(accessToken: string) {
   try {
@@ -806,6 +837,30 @@ async function fetchUserInfo(accessToken: string) {
     throw error;
   }
 }
+
+// Update profiles table in supabase after google oauth sign-up or sign-in
+
+/*async function updateProfileInSupabase(userData) {
+  const { user_uuid, user_name, user_email, user_picture, user_locale } = userData;
+
+  const supabaseAdminClient = createClient(
+    process.env.SUPABASE_URL,
+    process.env.SUPABASE_SERVICE_KEY
+  );
+
+  const { error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
+    user_uuid,
+    user_name,
+    user_email,
+    user_picture,
+    user_locale,
+  });
+
+  if (error) {
+    console.error('Error updating profile in Supabase:', error);
+    throw error;
+  }
+}*/
 
 // Instant Message APIs
 
