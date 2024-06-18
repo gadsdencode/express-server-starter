@@ -1028,8 +1028,9 @@ api.get('/search-users', async (req: Request, res: Response) => {
     const offset = (Number(page) - 1) * Number(limit);
     const { data, error, count } = await supabase
       .from('profiles')
-      .select('id, full_name, email, phone, role, company', { count: 'exact' })
+      .select('id, full_name, name, email, phone, role, company, coach_selection', { count: 'exact' })
       .ilike('full_name', `%${query}%`)
+      .ilike('name', `%${query}%`)
       .order(sort as string, { ascending: order === 'asc' })
       .range(offset, offset + Number(limit) - 1);
 
