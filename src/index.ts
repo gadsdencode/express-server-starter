@@ -98,6 +98,12 @@ const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
 logger.info('Created Supabase client:', supabase);
 
+const supabaseAdminClient = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL,
+  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
+);
+logger.info('Created Supabase admin client:', supabaseAdminClient);
+
 
 const redirectUri = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
 
@@ -774,11 +780,6 @@ api.post('/create-room', async (req: Request, res: Response) => {
     res.status(500).json({ error: error.message });
   }
 });
-
-const supabaseAdminClient = createClient(
-  process.env.SUPABASE_URL,
-  process.env.SUPABASE_SERVICE_KEY
-);
 
 api.post('/update-profile', async (req, res) => {
   logger.info('Received request to update profile');
