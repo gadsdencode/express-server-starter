@@ -784,7 +784,8 @@ api.post('/create-room', async (req: Request, res: Response) => {
 api.post('/update-profile', async (req, res) => {
   logger.info('Received request to update profile');
   const { user_uuid, user_name, user_email, user_picture, user_locale } = req.body;
-  logger.info('Received request to update profile:', req.body);
+
+  logger.info('Request body:', { user_uuid, user_name, user_email, user_picture, user_locale });
 
   try {
     const { error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
@@ -795,12 +796,11 @@ api.post('/update-profile', async (req, res) => {
       user_locale,
     });
 
-    logger.info('Supabase RPC response:', error);
-
     if (error) {
       logger.error('Supabase RPC error:', error);
       throw new Error(`Failed to update profile: ${error.message}`);
     }
+    logger.info('Supabase RPC response:', error);
 
     res.status(200).json({ message: 'Profile updated successfully' });
     logger.info('Profile updated successfully for user:', user_uuid);
