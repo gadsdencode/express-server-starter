@@ -751,6 +751,31 @@ api.post('/link-users-to-chat', [
   }
 });
 
+api.get('/fetch-chat-history/:chatId', async (req: Request, res: Response) => {
+  const { chatId } = req.params;
+
+  if (!chatId) {
+    return res.status(400).json({ message: 'Chat ID is required' });
+  }
+
+  try {
+    const { data, error } = await supabase
+      .from('messages')
+      .select('*')
+      .eq('chat_id', chatId)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      throw new Error(`Failed to fetch chat history: ${error.message}`);
+    }
+
+    res.json(data);
+  } catch (error) {
+    const message = (error as { message: string }).message || 'Error fetching chat history.';
+    res.status(500).json({ message });
+  }
+});
+
 
 api.get('/hello', (req, res) => {
   logger.info('Hello world endpoint called');
