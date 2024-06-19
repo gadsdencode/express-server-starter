@@ -1,4 +1,4 @@
-import express, { Request, Response, NextFunction } from 'express';
+import express, { Request, Response } from 'express';
 import http from 'http';
 import cookieParser from 'cookie-parser';
 import { Server as WebSocketServer, WebSocket } from 'ws';
@@ -70,11 +70,6 @@ const logger = winston.createLogger({
   ]
 });
 
-const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
-  (req: Request, res: Response, next: NextFunction) => {
-    Promise.resolve(fn(req, res, next)).catch(next);
-  };
-
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const clientSecret = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
 /*
@@ -100,18 +95,8 @@ logger.info('Created Google Calendar client:', createGoogleCalendarClient());
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
-const supabaseAdminKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
-
-if (!supabaseUrl || !supabaseKey || !supabaseAdminKey) {
-    throw new Error("Supabase environment variables are not set properly");
-}
-
 const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
 logger.info('Created Supabase client:', supabase);
-
-const supabaseAdminClient = createClient(supabaseUrl, supabaseAdminKey);
-logger.info('Created Supabase admin client:', supabaseAdminClient);
-
 
 
 const redirectUri = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
@@ -277,25 +262,35 @@ async function handleMessage(message: WebSocketMessage, ws: WebSocket) {
 const api = express.Router();
 
 // Google APIs
-api.post('/auth/google/refresh-token', asyncHandler(async (req: Request, res: Response) => {
-  logger.info('Received request to refresh access token');
-  const user = new OAuth2Client(clientId, clientSecret);
-  logger.info('Set user:', user);
-  user.setCredentials({ refresh_token: req.body.refreshToken });
-  logger.info('Set credentials:', { refresh_token: req.body.refreshToken });
-  const { credentials } = await user.refreshAccessToken();
-  logger.info('Refreshed access token:', credentials);
-  logger.info(`Refresh token used successfully for clientId: ${clientId}`);
-  res.json(credentials);
-}));
-
-api.get('/calendarevents', asyncHandler(async (req: Request, res: Response) => {
-  logger.info('Received request to fetch calendar events');
-  const accessToken = req.headers.authorization?.split(' ')[1];
-  logger.info('Received access token:', accessToken);
-  if (!accessToken) {
-    throw new Error('Access token is missing');
+api.post('/auth/google', async (req: Request, res: Response) => {
+  logger.info('Received request to fetch Google access tokens');
+  try {
+    const { tokens } = await oAuth2Client.getToken(req.body.code);
+    logger.info(`Access tokens retrieved: ${JSON.stringify(tokens)}`);
+    res.json(tokens);
+    logger.info('Returned access tokens:', tokens);
+  } catch (error) {
+    logger.error(`Error retrieving tokens: ${error}`);
+    res.status(500).send('Failed to retrieve tokens');
   }
+});
+
+api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
+  logger.info('Received request to refresh access token');
+  try {
+    const user = new OAuth2Client(clientId, clientSecret);
+    logger.info('Set user:', user);
+    user.setCredentials({ refresh_token: req.body.refreshToken });
+    logger.info('Set credentials:', { refresh_token: req.body.refreshToken });
+    const { credentials } = await user.refreshAccessToken();
+    logger.info('Refreshed access token:', credentials);
+    logger.info(`Refresh token used successfully for clientId: ${clientId}`);
+    res.json(credentials);
+  } catch (error) {
+    logger.error(`Error refreshing access token: ${error}`);
+    res.status(500).send('Failed to refresh access token');
+  }
+});
 
 api.get('/calendarevents', async (req: Request, res: Response) => {
   logger.info('Received request to fetch calendar events');
@@ -780,36 +775,6 @@ api.post('/create-room', async (req: Request, res: Response) => {
   }
 });
 
-api.post('/update-profile', async (req, res) => {
-  logger.info('Received request to update profile');
-  const { user_uuid, user_name, user_email } = req.body;
-
-  logger.info('Request body:', { user_uuid, user_name, user_email });
-
-  try {
-    const { data, error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
-      user_uuid,
-      user_name,
-      user_email,
-    });
-
-    if (error) {
-      logger.error('Supabase RPC error:', error.details, error.hint);
-      throw new Error(`Failed to update profile: ${error.message}`);
-    }
-    logger.info('Supabase RPC response:', data);
-
-    res.status(200).json({ message: 'Profile updated successfully' });
-    logger.info('Profile updated successfully for user:', user_uuid);
-  } catch (error: any) {
-    const message = error.message || 'An unexpected error occurred.';
-    logger.error('Error updating profile:', message);
-    res.status(500).json({ message });
-  }
-});
-
-
-
 // Google API User Info
 async function fetchUserInfo(accessToken: string) {
   try {
@@ -841,30 +806,6 @@ async function fetchUserInfo(accessToken: string) {
     throw error;
   }
 }
-
-// Update profiles table in supabase after google oauth sign-up or sign-in
-
-/*async function updateProfileInSupabase(userData) {
-  const { user_uuid, user_name, user_email, user_picture, user_locale } = userData;
-
-  const supabaseAdminClient = createClient(
-    process.env.SUPABASE_URL,
-    process.env.SUPABASE_SERVICE_KEY
-  );
-
-  const { error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
-    user_uuid,
-    user_name,
-    user_email,
-    user_picture,
-    user_locale,
-  });
-
-  if (error) {
-    console.error('Error updating profile in Supabase:', error);
-    throw error;
-  }
-}*/
 
 // Instant Message APIs
 
@@ -1158,4 +1099,4 @@ app._router.stack.forEach((middleware) => {
 const port = process.env.PORT || 3333;
 server.listen(port, () => {
   logger.info(`Server started on port ${port}`);
-})}));
+});
