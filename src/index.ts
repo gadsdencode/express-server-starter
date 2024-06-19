@@ -792,7 +792,7 @@ api.post('/update-profile', async (req, res) => {
   logger.info('Request body:', { user_uuid, user_name, user_email });
 
   try {
-    const { data, error } = await supabaseAdminClient.rpc('public.update_profile_on_google_signup', {
+    const { data, error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
       user_uuid,
       user_name,
       user_email,
