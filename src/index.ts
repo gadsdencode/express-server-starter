@@ -788,19 +788,19 @@ api.post('/update-profile', async (req, res) => {
   logger.info('Request body:', { user_uuid, user_name, user_email, user_picture, user_locale });
 
   try {
-    const { error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
-      user_email,
-      user_locale,
-      user_name,
-      user_picture,
+    const { data, error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
       user_uuid,
+      user_name,
+      user_email,
+      user_picture,
+      user_locale,
     });
 
     if (error) {
       logger.error('Supabase RPC error:', error);
       throw new Error(`Failed to update profile: ${error.message}`);
     }
-    logger.info('Supabase RPC response:', error);
+    logger.info('Supabase RPC response:', data);
 
     res.status(200).json({ message: 'Profile updated successfully' });
     logger.info('Profile updated successfully for user:', user_uuid);
