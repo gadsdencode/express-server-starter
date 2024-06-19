@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import http from 'http';
 import cookieParser from 'cookie-parser';
 import { Server as WebSocketServer, WebSocket } from 'ws';
@@ -69,6 +69,11 @@ const logger = winston.createLogger({
     new winston.transports.File({ filename: 'rejections.log' })
   ]
 });
+
+const asyncHandler = (fn: (req: Request, res: Response, next: NextFunction) => Promise<any>) =>
+  (req: Request, res: Response, next: NextFunction) => {
+    Promise.resolve(fn(req, res, next)).catch(next);
+  };
 
 const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
 const clientSecret = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_SECRET;
@@ -272,35 +277,25 @@ async function handleMessage(message: WebSocketMessage, ws: WebSocket) {
 const api = express.Router();
 
 // Google APIs
-api.post('/auth/google', async (req: Request, res: Response) => {
-  logger.info('Received request to fetch Google access tokens');
-  try {
-    const { tokens } = await oAuth2Client.getToken(req.body.code);
-    logger.info(`Access tokens retrieved: ${JSON.stringify(tokens)}`);
-    res.json(tokens);
-    logger.info('Returned access tokens:', tokens);
-  } catch (error) {
-    logger.error(`Error retrieving tokens: ${error}`);
-    res.status(500).send('Failed to retrieve tokens');
-  }
-});
-
-api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
+api.post('/auth/google/refresh-token', asyncHandler(async (req: Request, res: Response) => {
   logger.info('Received request to refresh access token');
-  try {
-    const user = new OAuth2Client(clientId, clientSecret);
-    logger.info('Set user:', user);
-    user.setCredentials({ refresh_token: req.body.refreshToken });
-    logger.info('Set credentials:', { refresh_token: req.body.refreshToken });
-    const { credentials } = await user.refreshAccessToken();
-    logger.info('Refreshed access token:', credentials);
-    logger.info(`Refresh token used successfully for clientId: ${clientId}`);
-    res.json(credentials);
-  } catch (error) {
-    logger.error(`Error refreshing access token: ${error}`);
-    res.status(500).send('Failed to refresh access token');
+  const user = new OAuth2Client(clientId, clientSecret);
+  logger.info('Set user:', user);
+  user.setCredentials({ refresh_token: req.body.refreshToken });
+  logger.info('Set credentials:', { refresh_token: req.body.refreshToken });
+  const { credentials } = await user.refreshAccessToken();
+  logger.info('Refreshed access token:', credentials);
+  logger.info(`Refresh token used successfully for clientId: ${clientId}`);
+  res.json(credentials);
+}));
+
+api.get('/calendarevents', asyncHandler(async (req: Request, res: Response) => {
+  logger.info('Received request to fetch calendar events');
+  const accessToken = req.headers.authorization?.split(' ')[1];
+  logger.info('Received access token:', accessToken);
+  if (!accessToken) {
+    throw new Error('Access token is missing');
   }
-});
 
 api.get('/calendarevents', async (req: Request, res: Response) => {
   logger.info('Received request to fetch calendar events');
@@ -1163,4 +1158,4 @@ app._router.stack.forEach((middleware) => {
 const port = process.env.PORT || 3333;
 server.listen(port, () => {
   logger.info(`Server started on port ${port}`);
-});
+})}));
