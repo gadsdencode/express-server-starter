@@ -95,14 +95,18 @@ logger.info('Created Google Calendar client:', createGoogleCalendarClient());
 
 const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
 const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+const supabaseAdminKey = process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY;
+
+if (!supabaseUrl || !supabaseKey || !supabaseAdminKey) {
+    throw new Error("Supabase environment variables are not set properly");
+}
+
 const supabase: SupabaseClient = createClient(supabaseUrl, supabaseKey);
 logger.info('Created Supabase client:', supabase);
 
-const supabaseAdminClient = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-  process.env.NEXT_PUBLIC_SUPABASE_SERVICE_KEY
-);
+const supabaseAdminClient = createClient(supabaseUrl, supabaseAdminKey);
 logger.info('Created Supabase admin client:', supabaseAdminClient);
+
 
 
 const redirectUri = process.env.NEXT_PUBLIC_LINKEDIN_REDIRECT_URI;
