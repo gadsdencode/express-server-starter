@@ -801,7 +801,7 @@ api.post('/update-profile', async (req, res) => {
     });
 
     if (error) {
-      logger.error('Supabase RPC error:', error);
+      logger.error('Supabase RPC error:', error.details, error.hint);
       throw new Error(`Failed to update profile: ${error.message}`);
     }
     logger.info('Supabase RPC response:', data);
@@ -810,10 +810,11 @@ api.post('/update-profile', async (req, res) => {
     logger.info('Profile updated successfully for user:', user_uuid);
   } catch (error: any) {
     const message = error.message || 'An unexpected error occurred.';
-    logger.error('Error updating profile:', error);
+    logger.error('Error updating profile:', message);
     res.status(500).json({ message });
   }
 });
+
 
 
 // Google API User Info
