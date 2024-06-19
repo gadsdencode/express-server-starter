@@ -787,17 +787,15 @@ api.post('/create-room', async (req: Request, res: Response) => {
 
 api.post('/update-profile', async (req, res) => {
   logger.info('Received request to update profile');
-  const { user_uuid, user_name, user_email, user_picture, user_locale } = req.body;
+  const { user_uuid, user_name, user_email } = req.body;
 
-  logger.info('Request body:', { user_uuid, user_name, user_email, user_picture, user_locale });
+  logger.info('Request body:', { user_uuid, user_name, user_email });
 
   try {
-    const { data, error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
+    const { data, error } = await supabaseAdminClient.rpc('public.update_profile_on_google_signup', {
       user_uuid,
       user_name,
       user_email,
-      user_picture,
-      user_locale,
     });
 
     if (error) {
@@ -814,6 +812,7 @@ api.post('/update-profile', async (req, res) => {
     res.status(500).json({ message });
   }
 });
+
 
 
 
