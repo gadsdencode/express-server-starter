@@ -789,11 +789,11 @@ api.post('/update-profile', async (req, res) => {
 
   try {
     const { error } = await supabaseAdminClient.rpc('update_profile_on_google_signup', {
-      user_uuid,
-      user_name,
       user_email,
-      user_picture,
       user_locale,
+      user_name,
+      user_picture,
+      user_uuid,
     });
 
     if (error) {
