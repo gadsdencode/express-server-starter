@@ -815,7 +815,6 @@ api.post('/update-profile', async (req, res) => {
 
 
 
-
 // Google API User Info
 async function fetchUserInfo(accessToken: string) {
   try {
