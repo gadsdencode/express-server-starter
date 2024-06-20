@@ -237,9 +237,11 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
 }
 
 async function handleMessage(message: WebSocketMessage, ws: WebSocket) {
+  const messageId = crypto.randomUUID(); // Generate a unique ID for the message
   const { error } = await supabase
     .from('messages')
     .insert([{
+      id: messageId,
       chat_id: message.chat_id,
       author_id: message.author_id,
       content: message.content,
@@ -252,9 +254,10 @@ async function handleMessage(message: WebSocketMessage, ws: WebSocket) {
     return;
   }
 
+  const broadcastMessage = { ...message, id: messageId };
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(message));
+      client.send(JSON.stringify(broadcastMessage));
     }
   });
 }
