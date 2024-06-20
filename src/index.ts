@@ -234,7 +234,12 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
 
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'reactionUpdate', messageId, reactions: updatedReactions }));
+      client.send(JSON.stringify({ 
+        type: 'reactionUpdate', 
+        messageId, 
+        reactions: updatedReactions,
+        senderId // Include the senderId in the update
+      }));
     }
   });
 }
