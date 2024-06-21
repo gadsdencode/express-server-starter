@@ -47,6 +47,7 @@ interface WebSocketMessage {
   content: string;
   parentMessageId?: string;
   chatId?: string;
+  emojiId?: string;
 }
 
 dotenv.config();
@@ -294,7 +295,7 @@ async function handleTypingEvent(message: WebSocketMessage, ws: WebSocket) {
 }
 
 async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
-  const { messageId, reaction, senderId } = message;
+  const { messageId, emojiId, senderId } = message;
   
   const { data, error } = await supabase
     .from('messages')
@@ -308,16 +309,16 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
   }
 
   let reactions = data.reactions || {};
-  if (!reactions[reaction]) {
-    reactions[reaction] = [];
+  if (!reactions[emojiId]) {
+    reactions[emojiId] = [];
   }
   
-  if (!reactions[reaction].includes(senderId)) {
-    reactions[reaction].push(senderId);
+  if (!reactions[emojiId].includes(senderId)) {
+    reactions[emojiId].push(senderId);
   } else {
-    reactions[reaction] = reactions[reaction].filter((id: string) => id !== senderId);
-    if (reactions[reaction].length === 0) {
-      delete reactions[reaction];
+    reactions[emojiId] = reactions[emojiId].filter(id => id !== senderId);
+    if (reactions[emojiId].length === 0) {
+      delete reactions[emojiId];
     }
   }
 
@@ -334,7 +335,7 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
   // Broadcast the updated reactions to all clients
   wss.clients.forEach(client => {
     if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ type: 'reactionUpdate', messageId, reactions }));
+      client.send(JSON.stringify({ type: 'reactionUpdate', messageId, reactions, emojiId, senderId }));
     }
   });
 }
