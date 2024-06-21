@@ -1101,28 +1101,43 @@ api.get('/search-users-filtered', async (req, res) => {
 api.get('/search-users-filtered2', async (req, res) => {
   const { userId, query } = req.query;
 
-  if (!userId) return res.status(400).json({ message: 'User ID is required' });
-  if (!query) return res.status(400).json({ message: 'Search query is required' });
+  if (!userId) return res.status(400).json({ message: 'Coach ID is required' });
 
   try {
+    // First, verify that the userId belongs to a coach
     const coachProfile = await supabase
       .from('profiles')
-      .select('id')
-      .eq('coach_selection', userId);
+      .select('id, role')
+      .eq('id', userId)
+      .single();
 
     if (coachProfile.error) throw coachProfile.error;
-    if (coachProfile.data.length === 0) return res.status(404).json({ message: 'No users found for this coach.' });
+    if (!coachProfile.data || coachProfile.data.role !== 'coach') {
+      return res.status(403).json({ message: 'Access denied. User is not a coach.' });
+    }
 
-    const userIds = coachProfile.data.map(profile => profile.id);
-    const profiles = await supabase
+    // Fetch users who have selected this coach
+    let usersQuery = supabase
       .from('profiles')
       .select('*')
-      .in('id', userIds)
-      .ilike('name', `%${query}%`);
+      .eq('coach_selection', userId);
 
-    if (profiles.error) throw profiles.error;
-    res.status(200).json(profiles.data);
+    // If a search query is provided, add it to the filter
+    if (query && query !== '*') {
+      usersQuery = usersQuery.ilike('name', `%${query}%`);
+    }
+
+    const users = await usersQuery;
+
+    if (users.error) throw users.error;
+
+    if (users.data.length === 0) {
+      return res.status(404).json({ message: 'No users found for this coach.' });
+    }
+
+    res.status(200).json(users.data);
   } catch (err) {
+    console.error('Error in search-users-filtered2:', err);
     res.status(500).json({ message: 'Internal server error', details: (err as Error).message });
   }
 });
