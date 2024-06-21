@@ -209,16 +209,27 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
     return;
   }
 
-  let updatedReactions = messageData.reactions || {};
-  if (!updatedReactions[reaction]) {
-    updatedReactions[reaction] = [];
-  }
+  let updatedReactions = messageData.reactions || [];
+  const existingReactionIndex = updatedReactions.findIndex(r => r.includes(reaction));
 
-  const userIndex = updatedReactions[reaction].indexOf(senderId);
-  if (userIndex === -1) {
-    updatedReactions[reaction].push(senderId);
+  if (existingReactionIndex !== -1) {
+    const [existingReaction, users] = updatedReactions[existingReactionIndex].split(':');
+    const userList = users.split(',');
+    const userIndex = userList.indexOf(senderId);
+    
+    if (userIndex === -1) {
+      userList.push(senderId);
+    } else {
+      userList.splice(userIndex, 1);
+    }
+    
+    if (userList.length > 0) {
+      updatedReactions[existingReactionIndex] = `${existingReaction}:${userList.join(',')}`;
+    } else {
+      updatedReactions.splice(existingReactionIndex, 1);
+    }
   } else {
-    updatedReactions[reaction].splice(userIndex, 1);
+    updatedReactions.push(`${reaction}:${senderId}`);
   }
 
   const { error: updateError } = await supabase
@@ -238,7 +249,7 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
         type: 'reactionUpdate', 
         messageId, 
         reactions: updatedReactions,
-        senderId // Include the senderId in the update
+        senderId
       }));
     }
   });
