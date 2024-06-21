@@ -313,10 +313,11 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
     reactions[emojiId] = [];
   }
   
-  if (!reactions[emojiId].includes(senderId)) {
+  const userIndex = reactions[emojiId].indexOf(senderId);
+  if (userIndex === -1) {
     reactions[emojiId].push(senderId);
   } else {
-    reactions[emojiId] = reactions[emojiId].filter(id => id !== senderId);
+    reactions[emojiId].splice(userIndex, 1);
     if (reactions[emojiId].length === 0) {
       delete reactions[emojiId];
     }
