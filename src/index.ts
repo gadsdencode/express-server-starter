@@ -165,7 +165,7 @@ wss.on('connection', (ws: WebSocket) => {
 async function handleWebSocketMessage(message: WebSocketMessage, ws: WebSocket) {
   switch (message.type) {
     case 'reaction':
-      await handleReaction(message, ws);
+      await handleReaction(message);
       break;
     case 'typing_started':
     case 'typing_stopped':
@@ -186,6 +186,14 @@ async function handleWebSocketMessage(message: WebSocketMessage, ws: WebSocket) 
     default:
       await handleMessage(message, ws);
   }
+}
+
+function broadcastToClients(message: any) {
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify(message));
+    }
+  });
 }
 
 async function handleReadReceipt(message: WebSocketMessage, ws: WebSocket) {
@@ -293,70 +301,47 @@ async function handleTypingEvent(message: WebSocketMessage, ws: WebSocket) {
   logger.info(`Typing event ${type} from ${senderId} was sent to ${recipients} other clients.`);
 }
 
-async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
-  const { messageId, reaction, senderId } = message;
-
-  if (!messageId) {
-    ws.send(JSON.stringify({ error: 'Message ID is required for reactions' }));
-    return;
-  }
-
-  const { data: messageData, error: messageError } = await supabase
+async function handleReaction(message: WebSocketMessage) {
+  const { messageId, reaction, userId } = message;
+  
+  // Fetch current reactions
+  const { data, error } = await supabase
     .from('messages')
     .select('reactions')
     .eq('id', messageId)
     .single();
 
-  if (messageError) {
-    logger.error('Failed to fetch message for reaction:', messageError.message);
-    ws.send(JSON.stringify({ error: 'Failed to fetch message' }));
+  if (error) {
+    console.error('Error fetching message:', error);
     return;
   }
 
-  let updatedReactions = messageData.reactions || [];
-  const existingReactionIndex = updatedReactions.findIndex(r => r.includes(reaction));
-
-  if (existingReactionIndex !== -1) {
-    const [existingReaction, users] = updatedReactions[existingReactionIndex].split(':');
-    const userList = users.split(',');
-    const userIndex = userList.indexOf(senderId);
-    
-    if (userIndex === -1) {
-      userList.push(senderId);
-    } else {
-      userList.splice(userIndex, 1);
-    }
-    
-    if (userList.length > 0) {
-      updatedReactions[existingReactionIndex] = `${existingReaction}:${userList.join(',')}`;
-    } else {
-      updatedReactions.splice(existingReactionIndex, 1);
-    }
+  // Update reactions
+  let reactions = data.reactions || {};
+  if (!reactions[reaction]) {
+    reactions[reaction] = [userId];
+  } else if (!reactions[reaction].includes(userId)) {
+    reactions[reaction].push(userId);
   } else {
-    updatedReactions.push(`${reaction}:${senderId}`);
+    reactions[reaction] = reactions[reaction].filter(id => id !== userId);
+    if (reactions[reaction].length === 0) {
+      delete reactions[reaction];
+    }
   }
 
+  // Save updated reactions
   const { error: updateError } = await supabase
     .from('messages')
-    .update({ reactions: updatedReactions })
+    .update({ reactions })
     .eq('id', messageId);
 
   if (updateError) {
-    logger.error('Failed to update reactions:', updateError.message);
-    ws.send(JSON.stringify({ error: 'Failed to update reactions' }));
+    console.error('Error updating reactions:', updateError);
     return;
   }
 
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify({ 
-        type: 'reactionUpdate', 
-        messageId, 
-        reactions: updatedReactions,
-        senderId
-      }));
-    }
-  });
+  // Broadcast the updated reactions to all clients
+  broadcastToClients({ type: 'reactionUpdate', messageId, reactions });
 }
 
 async function handleMessage(message: WebSocketMessage, ws: WebSocket) {
