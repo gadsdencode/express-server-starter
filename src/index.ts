@@ -298,9 +298,13 @@ async function handleTypingEvent(message: WebSocketMessage, ws: WebSocket) {
 async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
   const { messageId, emojiId, senderId } = message;
   
+  console.log('Received reaction:', { messageId, emojiId, senderId });
+  logger.info('Received reaction:', { messageId, emojiId, senderId });
+
   // Validate that the emojiId is a valid static ID
   if (!emojiMap.hasOwnProperty(emojiId)) {
     console.error('Invalid emoji ID:', emojiId);
+    logger.error('Invalid emoji ID:', emojiId);
     return;
   }
 
@@ -312,8 +316,12 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
 
   if (error) {
     console.error('Error fetching message:', error);
+    logger.error('Error fetching message:', error);
     return;
   }
+
+  console.log('Current reactions:', data.reactions);
+  logger.info('Current reactions:', data.reactions);
 
   let reactions = data.reactions || {};
   if (!reactions[emojiId]) {
@@ -330,6 +338,9 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
     }
   }
 
+  console.log('Updated reactions:', reactions);
+  logger.info('Updated reactions:', reactions);
+
   const { error: updateError } = await supabase
     .from('messages')
     .update({ reactions })
@@ -337,8 +348,12 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
 
   if (updateError) {
     console.error('Error updating reactions:', updateError);
+    logger.error('Error updating reactions:', updateError);
     return;
   }
+
+  console.log('Reaction update successful');
+  logger.info('Reaction update successful');
 
   // Broadcast the updated reactions to all clients
   wss.clients.forEach(client => {
