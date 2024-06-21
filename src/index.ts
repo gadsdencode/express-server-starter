@@ -12,7 +12,7 @@ import { createClient, SupabaseClient  } from '@supabase/supabase-js';
 import dotenv from 'dotenv';
 import { google } from 'googleapis';
 import axios from 'axios';
-import { emojiMap } from './shared/emojiMapper';
+import { emojiMap, isValidEmojiId } from './shared/emojiMapper';
 
 import { getLinkedInData, getLinkedInAccessToken } from './server/linkedin';
 
@@ -302,7 +302,7 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
   logger.info('Received reaction:', { messageId, emojiId, senderId });
 
   // Validate that the emojiId is a valid static ID
-  if (!emojiMap.hasOwnProperty(emojiId)) {
+  if (!isValidEmojiId(emojiId)) {
     console.error('Invalid emoji ID:', emojiId);
     logger.error('Invalid emoji ID:', emojiId);
     console.log('Valid emoji IDs:', Object.keys(emojiMap));
