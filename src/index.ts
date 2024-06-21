@@ -315,7 +315,7 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
   if (!reactions[reaction].includes(senderId)) {
     reactions[reaction].push(senderId);
   } else {
-    reactions[reaction] = reactions[reaction].filter(id => id !== senderId);
+    reactions[reaction] = reactions[reaction].filter((id: string) => id !== senderId);
     if (reactions[reaction].length === 0) {
       delete reactions[reaction];
     }
