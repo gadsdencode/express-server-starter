@@ -45,6 +45,8 @@ interface WebSocketMessage {
   updatedAt?: string;
   author_id?: string;
   content: string;
+  parentMessageId?: string;
+  chatId?: string;
 }
 
 dotenv.config();
@@ -161,13 +163,115 @@ wss.on('connection', (ws: WebSocket) => {
 });
 
 async function handleWebSocketMessage(message: WebSocketMessage, ws: WebSocket) {
-  if (message.type === 'reaction') {
-    await handleReaction(message, ws);
-  } else if (message.type === 'typing_started' || message.type === 'typing_stopped') {
-    await handleTypingEvent(message, ws);
-  } else {
-    await handleMessage(message, ws);
+  switch (message.type) {
+    case 'reaction':
+      await handleReaction(message, ws);
+      break;
+    case 'typing_started':
+    case 'typing_stopped':
+      await handleTypingEvent(message, ws);
+      break;
+    case 'read_receipt':
+      await handleReadReceipt(message, ws);
+      break;
+    case 'edit_message':
+      await handleEditMessage(message, ws);
+      break;
+    case 'delete_message':
+      await handleDeleteMessage(message, ws);
+      break;
+    case 'thread_reply':
+      await handleThreadReply(message, ws);
+      break;
+    default:
+      await handleMessage(message, ws);
   }
+}
+
+async function handleReadReceipt(message: WebSocketMessage, ws: WebSocket) {
+  const { messageId, userId, chatId } = message;
+  
+  const { error } = await supabase
+    .from('messages')
+    .update({ 
+      read_by: supabase.rpc('array_append', { arr: 'read_by', elem: userId })
+    })
+    .eq('id', messageId)
+    .select();
+
+  if (error) {
+    logger.error('Failed to update read receipt:', error.message);
+    return;
+  }
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'read_receipt', messageId, userId, chatId }));
+    }
+  });
+}
+
+async function handleEditMessage(message: WebSocketMessage, ws: WebSocket) {
+  const { messageId, content } = message;
+
+  const { error } = await supabase
+    .from('messages')
+    .update({ content, updated_at: new Date().toISOString() })
+    .eq('id', messageId);
+
+  if (error) {
+    logger.error('Failed to edit message:', error.message);
+    ws.send(JSON.stringify({ error: 'Failed to edit message' }));
+    return;
+  }
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'message_edited', messageId, content }));
+    }
+  });
+}
+
+async function handleDeleteMessage(message: WebSocketMessage, ws: WebSocket) {
+  const { messageId } = message;
+
+  const { error } = await supabase
+    .from('messages')
+    .delete()
+    .eq('id', messageId);
+
+  if (error) {
+    logger.error('Failed to delete message:', error.message);
+    ws.send(JSON.stringify({ error: 'Failed to delete message' }));
+    return;
+  }
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'message_deleted', messageId }));
+    }
+  });
+}
+
+async function handleThreadReply(message: WebSocketMessage, ws: WebSocket) {
+  const { parentMessageId, ...messageData } = message;
+
+  const { data, error } = await supabase
+    .from('messages')
+    .insert({ ...messageData, parent_id: parentMessageId })
+    .select();
+
+  if (error) {
+    logger.error('Failed to create thread reply:', error.message);
+    ws.send(JSON.stringify({ error: 'Failed to create thread reply' }));
+    return;
+  }
+
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'thread_reply', ...data[0] }));
+    }
+  });
 }
 
 async function handleTypingEvent(message: WebSocketMessage, ws: WebSocket) {
