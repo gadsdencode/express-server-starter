@@ -165,7 +165,7 @@ wss.on('connection', (ws: WebSocket) => {
 async function handleWebSocketMessage(message: WebSocketMessage, ws: WebSocket) {
   switch (message.type) {
     case 'reaction':
-      await handleReaction(message);
+      await handleReaction(message, ws);
       break;
     case 'typing_started':
     case 'typing_stopped':
@@ -186,14 +186,6 @@ async function handleWebSocketMessage(message: WebSocketMessage, ws: WebSocket) 
     default:
       await handleMessage(message, ws);
   }
-}
-
-function broadcastToClients(message: any) {
-  wss.clients.forEach(client => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(JSON.stringify(message));
-    }
-  });
 }
 
 async function handleReadReceipt(message: WebSocketMessage, ws: WebSocket) {
@@ -301,10 +293,9 @@ async function handleTypingEvent(message: WebSocketMessage, ws: WebSocket) {
   logger.info(`Typing event ${type} from ${senderId} was sent to ${recipients} other clients.`);
 }
 
-async function handleReaction(message: WebSocketMessage) {
-  const { messageId, reaction, userId } = message;
+async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
+  const { messageId, reaction, senderId } = message;
   
-  // Fetch current reactions
   const { data, error } = await supabase
     .from('messages')
     .select('reactions')
@@ -316,20 +307,20 @@ async function handleReaction(message: WebSocketMessage) {
     return;
   }
 
-  // Update reactions
   let reactions = data.reactions || {};
   if (!reactions[reaction]) {
-    reactions[reaction] = [userId];
-  } else if (!reactions[reaction].includes(userId)) {
-    reactions[reaction].push(userId);
+    reactions[reaction] = [];
+  }
+  
+  if (!reactions[reaction].includes(senderId)) {
+    reactions[reaction].push(senderId);
   } else {
-    reactions[reaction] = reactions[reaction].filter(id => id !== userId);
+    reactions[reaction] = reactions[reaction].filter(id => id !== senderId);
     if (reactions[reaction].length === 0) {
       delete reactions[reaction];
     }
   }
 
-  // Save updated reactions
   const { error: updateError } = await supabase
     .from('messages')
     .update({ reactions })
@@ -341,7 +332,11 @@ async function handleReaction(message: WebSocketMessage) {
   }
 
   // Broadcast the updated reactions to all clients
-  broadcastToClients({ type: 'reactionUpdate', messageId, reactions });
+  wss.clients.forEach(client => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(JSON.stringify({ type: 'reactionUpdate', messageId, reactions }));
+    }
+  });
 }
 
 async function handleMessage(message: WebSocketMessage, ws: WebSocket) {
