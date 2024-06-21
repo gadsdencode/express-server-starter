@@ -305,6 +305,8 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
   if (!emojiMap.hasOwnProperty(emojiId)) {
     console.error('Invalid emoji ID:', emojiId);
     logger.error('Invalid emoji ID:', emojiId);
+    console.log('Valid emoji IDs:', Object.keys(emojiMap));
+    logger.info('Valid emoji IDs:', Object.keys(emojiMap));
     return;
   }
 
