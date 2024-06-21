@@ -307,6 +307,7 @@ async function handleReaction(message: WebSocketMessage, ws: WebSocket) {
     logger.error('Invalid emoji ID:', emojiId);
     console.log('Valid emoji IDs:', Object.keys(emojiMap));
     logger.info('Valid emoji IDs:', Object.keys(emojiMap));
+    ws.send(JSON.stringify({ type: 'error', message: 'Invalid emoji ID' }));
     return;
   }
 

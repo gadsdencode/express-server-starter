@@ -8,12 +8,12 @@ export const emojiMap: { [key: string]: string } = {
 };
 
 export const getEmoji = (id: string): string => {
-    return emojiMap[id] || '❓'; // Fallback to a question mark if no mapping found
+    return emojiMap[id] || '❓';
 };
 
-export const getEmojiId = (emoji: string): string | null => {
+export const getEmojiId = (emoji: string): string => {
     const entry = Object.entries(emojiMap).find(([_, value]) => value === emoji);
-    return entry ? entry[0] : null;
+    return entry ? entry[0] : 'emoji_unknown';
 };
 
 export const isValidEmojiId = (id: string): boolean => {
