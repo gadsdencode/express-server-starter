@@ -715,7 +715,6 @@ api.get('/user/profile', async (req: Request, res: Response) => {
   }
 });
 
-
 // LinkedIn APIs
 api.post('/linkedin/exchange-token', async (req: Request, res: Response) => {
   logger.info('Received request to exchange code for access token');
