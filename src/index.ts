@@ -425,6 +425,38 @@ api.post('/auth/google/refresh-token', async (req: Request, res: Response) => {
   }
 });
 
+// New google-calendar-events
+api.get('/google-calendar-events', async (req: Request, res: Response) => {
+  logger.info('Received request to fetch Google calendar events');
+  try {
+    const accessToken = req.headers.authorization?.split(' ')[1];
+    logger.info('Received access token:', accessToken);
+    if (!accessToken) {
+      throw new Error('Access token is missing');
+    }
+
+    oAuth2Client.setCredentials({ access_token: accessToken });
+    logger.info('Set access token:', accessToken);
+
+    const googleCalendarClient = createGoogleCalendarClient();
+    const events = await googleCalendarClient.events.list({
+      calendarId: 'primary',
+      timeMin: new Date().toISOString(),
+      maxResults: 10,
+      showDeleted: false,
+      singleEvents: true,
+      orderBy: 'startTime',
+    });
+
+    logger.info('Fetched Google events:', events.data.items);
+    res.json(events.data.items);
+  } catch (error) {
+    logger.error('Error retrieving Google events:', error);
+    const message = (error as { message: string }).message || 'Failed to fetch Google events';
+    res.status(500).json({ message });
+  }
+});
+
 api.get('/calendarevents', async (req: Request, res: Response) => {
   logger.info('Received request to fetch calendar events');
   try {
@@ -586,6 +618,57 @@ api.get('/appointments', async (req, res) => {
   } catch (error: any) {
     logger.error('Error fetching appointments:', error);
     res.status(500).json({ message: error.message || 'Failed to fetch appointments' });
+  }
+});
+
+// Supabase calender_events
+api.get('/supabase-calendar-events', async (req: Request, res: Response) => {
+  logger.info('Received request to fetch Supabase calendar events');
+  try {
+    const userEmail = req.query.email as string;
+    if (!userEmail) {
+      throw new Error('User email is missing');
+    }
+
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .select('*')
+      .eq('user_email', userEmail)
+      .order('start_time', { ascending: true });
+
+    if (error) {
+      throw error;
+    }
+
+    logger.info('Fetched Supabase events:', data);
+    res.json(data);
+  } catch (error) {
+    logger.error('Error retrieving Supabase events:', error);
+    const message = (error as { message: string }).message || 'Failed to fetch Supabase events';
+    res.status(500).json({ message });
+  }
+});
+
+api.post('/supabase-calendar-events', async (req: Request, res: Response) => {
+  logger.info('Received request to create a Supabase calendar event');
+  try {
+    const event = req.body;
+    logger.info('Event data:', event);
+
+    const { data, error } = await supabase
+      .from('calendar_events')
+      .insert([event]);
+
+    if (error) {
+      throw error;
+    }
+
+    logger.info('Supabase event created:', data);
+    res.status(201).json(data);
+  } catch (error) {
+    logger.error('Error creating Supabase event:', error);
+    const message = (error as { message: string }).message || 'Failed to create Supabase event';
+    res.status(500).json({ message });
   }
 });
 
